@@ -30,8 +30,8 @@ import eu.cdevreeze.yaidom.EName
 final class Validator_2_2_0_09 extends Validator[SchemaDocument] {
 
   def apply(x: SchemaDocument): ValidationResult[SchemaDocument] = {
-    val attributeFormDefaultOk = x.doc.documentElement.attributeOption(EName("@attributeFormDefault")) == Some("unqualified")
-    val elementFormDefaultOk = x.doc.documentElement.attributeOption(EName("@elementFormDefault")) == Some("qualified")
+    val attributeFormDefaultOk = x.doc.documentElement.attributeOption(EName("attributeFormDefault")) == Some("unqualified")
+    val elementFormDefaultOk = x.doc.documentElement.attributeOption(EName("elementFormDefault")) == Some("qualified")
 
     if (attributeFormDefaultOk && elementFormDefaultOk) ValidationResult.validResult(x)
     else {
