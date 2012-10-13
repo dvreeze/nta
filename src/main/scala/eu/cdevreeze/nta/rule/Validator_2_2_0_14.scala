@@ -37,7 +37,7 @@ final class Validator_2_2_0_14 extends Validator[SchemaDocument] {
       assert(path.lastEntry.elementName == EName(ns, "import"))
       assert(path.lastEntry.elementName == x.doc.documentElement.getWithElemPath(path).resolvedName)
 
-      path.entries.size <= 3 ||
+      path.entries.size < 3 ||
         path.parentPath.lastEntry.elementName != EName(SchemaDocument.NS, "appinfo") ||
         path.parentPath.parentPath.lastEntry.elementName != EName(SchemaDocument.NS, "annotation")
     }

@@ -18,18 +18,69 @@ package eu.cdevreeze.nta
 package common
 package document
 
-import eu.cdevreeze.yaidom.{ Document, Elem, EName, QName }
+import java.net.URI
+import scala.collection.immutable
+import eu.cdevreeze.yaidom.{ Document, Elem, EName, QName, ElemPath }
 import SchemaDocument._
 
 /**
- * XML Schema document.
+ * XML Schema document. XML Schema is not modeled in this class, but there are some helper methods to retrieve element declarations, etc.
+ *
+ * Note that an XML Schema can be comprised of several schema documents. Each instance of this class holds only one such document.
  *
  * @author Chris de Vreeze
  */
-final class SchemaDocument(val doc: Document) extends Immutable {
+final class SchemaDocument(
+  override val originalUri: URI,
+  override val localUri: URI,
+  override val doc: Document) extends TaxonomyDocument {
 
+  require(originalUri ne null)
+  require(localUri ne null)
   require(doc ne null)
+
+  require(originalUri.isAbsolute, "The original URI '%s' is not absolute".format(originalUri))
+  require(localUri.isAbsolute, "The local URI '%s' is not absolute".format(localUri))
+  require(originalUri.getFragment eq null, "The original URI '%s' has a fragment".format(originalUri))
+  require(localUri.getFragment eq null, "The local URI '%s' has a fragment".format(localUri))
+
   require(doc.documentElement.resolvedName == EName(NS, "schema"))
+
+  def targetNamespaceOption: Option[String] = doc.documentElement.attributeOption(EName("targetNamespace"))
+
+  def imports: immutable.IndexedSeq[Elem] = {
+    doc.documentElement filterChildElems { e => e.resolvedName == EName(NS, "import") }
+  }
+
+  def includes: immutable.IndexedSeq[Elem] = {
+    doc.documentElement filterChildElems { e => e.resolvedName == EName(NS, "include") }
+  }
+
+  def topLevelElementDeclarations: immutable.IndexedSeq[Elem] = {
+    doc.documentElement filterChildElems { e => e.resolvedName == EName(NS, "element") }
+  }
+
+  def elementDeclarationPaths: immutable.IndexedSeq[ElemPath] = {
+    doc.documentElement filterElemPaths { e => e.resolvedName == EName(NS, "element") }
+  }
+
+  def elementDeclarationsWithPaths: immutable.IndexedSeq[(ElemPath, Elem)] = {
+    val paths = elementDeclarationPaths
+    val result = paths map { p => (p -> doc.documentElement.getWithElemPath(p)) }
+    result
+  }
+
+  def uriOption(elm: Elem): Option[URI] = {
+    val idOption = elm.attributeOption(EName("id"))
+    idOption map { id => new URI(localUri.getScheme, localUri.getSchemeSpecificPart, id) }
+  }
+
+  def topLevelElementDeclarationsByUris: Map[URI, Elem] = {
+    val result = topLevelElementDeclarations flatMap { e =>
+      uriOption(e) map { uri => (uri -> e) }
+    }
+    result.toMap
+  }
 }
 
 object SchemaDocument {
