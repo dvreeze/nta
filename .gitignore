@@ -6,4 +6,4 @@ project/
 target/
 temp/
 .history
-src/test/resources/extracted-taxonomies
+src/test/resources/extracted-taxonomies/**/*

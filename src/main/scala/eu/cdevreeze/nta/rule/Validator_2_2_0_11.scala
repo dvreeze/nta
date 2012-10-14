@@ -27,12 +27,17 @@ import eu.cdevreeze.yaidom._
  *
  * My interpretation  is that all namespaces must be used in element or attribute names, ignoring text nodes.
  *
+ * TODO Fix, keeping imports in mind (which increases the "context" of the validator)!
+ *
  * @author Chris de Vreeze
  */
 final class Validator_2_2_0_11 extends Validator[SchemaDocument] {
 
   def apply(x: SchemaDocument): ValidationResult[SchemaDocument] = {
-    val unusedNamespaceUris: Set[String] = unusedNamespaces(Scope.Empty, x.doc.documentElement)
+    val adaptedRootElm = x.doc.documentElement.notUndeclaringPrefixes(Scope.Empty)
+
+    val unusedNamespaceUrisIgnoringTns: Set[String] = unusedNamespacesIgnoringTns(Scope.Empty, adaptedRootElm)
+    val unusedNamespaceUris: Set[String] = unusedNamespaceUrisIgnoringTns diff x.targetNamespaceOption.toSet
 
     if (unusedNamespaceUris.isEmpty) ValidationResult.validResult(x)
     else {
@@ -41,7 +46,7 @@ final class Validator_2_2_0_11 extends Validator[SchemaDocument] {
     }
   }
 
-  private def unusedNamespaces(parentScope: Scope, elm: Elem): Set[String] = {
+  private def unusedNamespacesIgnoringTns(parentScope: Scope, elm: Elem): Set[String] = {
     val introducedNamespaceUris: Set[String] = parentScope.relativize(elm.scope).withoutUndeclarations.map.values.toSet
 
     val usedNamespaceUris: Set[String] = introducedNamespaceUris filter { ns =>
@@ -56,6 +61,6 @@ final class Validator_2_2_0_11 extends Validator[SchemaDocument] {
 
     // Recursive but not tail-recursive calls
 
-    elm.allChildElems.foldLeft(unusedNamespaceUris) { (acc, childElm) => acc union unusedNamespaces(elm.scope, childElm) }
+    elm.allChildElems.foldLeft(unusedNamespaceUris) { (acc, childElm) => acc union unusedNamespacesIgnoringTns(elm.scope, childElm) }
   }
 }
