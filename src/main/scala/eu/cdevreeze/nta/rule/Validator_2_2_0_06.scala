@@ -17,7 +17,7 @@
 package eu.cdevreeze.nta
 package rule
 
-import common.document.SchemaDocument
+import common.document.{ SchemaDocument, Taxonomy }
 import common.validate.{ Validator, ValidationResult }
 import eu.cdevreeze.yaidom._
 
@@ -26,15 +26,15 @@ import eu.cdevreeze.yaidom._
  *
  * @author Chris de Vreeze
  */
-final class Validator_2_2_0_06 extends Validator[SchemaDocument] {
+final class Validator_2_2_0_06 extends Validator[SchemaDocument, Taxonomy] {
 
-  def apply(x: SchemaDocument): ValidationResult[SchemaDocument] = {
-    val unprefixedElms = x.doc.documentElement filterElemsOrSelf { e => e.qname.prefixOption.isEmpty }
+  def validate(doc: SchemaDocument)(context: Taxonomy): ValidationResult[SchemaDocument] = {
+    val unprefixedElms = doc.doc.documentElement filterElemsOrSelf { e => e.qname.prefixOption.isEmpty }
 
-    if (unprefixedElms.isEmpty) ValidationResult.validResult(x)
+    if (unprefixedElms.isEmpty) ValidationResult.validResult(doc)
     else {
       val messages = unprefixedElms map { e => "Found unprefixed element '%s'".format(e.qname) }
-      new ValidationResult(x, false, messages)
+      new ValidationResult(doc, false, messages)
     }
   }
 }

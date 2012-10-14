@@ -35,13 +35,13 @@ trait TaxonomyParser {
 
   private val docParser = eu.cdevreeze.yaidom.parse.DocumentParserUsingDom.newInstance
 
-  final def parse(rootDir: jio.File)(localUriToOriginalUri: URI => URI): Map[URI, TaxonomyDocument] = {
+  final def parse(rootDir: jio.File)(localUriToOriginalUri: URI => URI): Taxonomy = {
     require(rootDir.isDirectory && rootDir.exists, "Expected root directory %s".format(rootDir.getPath))
 
     val files = findAllFiles(rootDir)
     logger.info("Found %d taxonomy files".format(files.size))
 
-    val docs: Map[URI, TaxonomyDocument] = {
+    val docs: immutable.Seq[TaxonomyDocument] = {
       val result = files.par flatMap { f: jio.File =>
         try {
           val doc = docParser.parse(new jio.FileInputStream(f))
@@ -50,9 +50,9 @@ trait TaxonomyParser {
           val originalUri = localUriToOriginalUri(localUri)
 
           if (doc.documentElement.resolvedName.namespaceUriOption == Some(SchemaDocument.NS))
-            Some(localUri -> new SchemaDocument(originalUri, localUri, doc))
+            Some(new SchemaDocument(originalUri, localUri, doc))
           else if (doc.documentElement.resolvedName.namespaceUriOption == Some(LinkbaseDocument.NS))
-            Some(localUri -> new LinkbaseDocument(originalUri, localUri, doc))
+            Some(new LinkbaseDocument(originalUri, localUri, doc))
           else None
         } catch {
           case e: Exception =>
@@ -60,12 +60,13 @@ trait TaxonomyParser {
             None
         }
       }
-      result.seq.toMap
+      result.seq
     }
     logger.info("Found %d taxonomy documents".format(docs.size))
 
     require(!docs.isEmpty, "Expected at least one taxonomy file")
-    docs
+    val taxonomy = Taxonomy(docs)
+    taxonomy
   }
 
   private def findAllFiles(dir: jio.File): immutable.Seq[jio.File] = {

@@ -17,7 +17,7 @@
 package eu.cdevreeze.nta
 package rule
 
-import common.document.SchemaDocument
+import common.document.{ SchemaDocument, Taxonomy }
 import common.validate.{ Validator, ValidationResult }
 import eu.cdevreeze.yaidom.EName
 
@@ -27,15 +27,15 @@ import eu.cdevreeze.yaidom.EName
  *
  * @author Chris de Vreeze
  */
-final class Validator_2_2_0_09 extends Validator[SchemaDocument] {
+final class Validator_2_2_0_09 extends Validator[SchemaDocument, Taxonomy] {
 
-  def apply(x: SchemaDocument): ValidationResult[SchemaDocument] = {
-    val attributeFormDefaultOk = x.doc.documentElement.attributeOption(EName("attributeFormDefault")) == Some("unqualified")
-    val elementFormDefaultOk = x.doc.documentElement.attributeOption(EName("elementFormDefault")) == Some("qualified")
+  def validate(doc: SchemaDocument)(context: Taxonomy): ValidationResult[SchemaDocument] = {
+    val attributeFormDefaultOk = doc.doc.documentElement.attributeOption(EName("attributeFormDefault")) == Some("unqualified")
+    val elementFormDefaultOk = doc.doc.documentElement.attributeOption(EName("elementFormDefault")) == Some("qualified")
 
-    if (attributeFormDefaultOk && elementFormDefaultOk) ValidationResult.validResult(x)
+    if (attributeFormDefaultOk && elementFormDefaultOk) ValidationResult.validResult(doc)
     else {
-      new ValidationResult(x, false, Vector("Missing or incorrect @attributeFormDefault and/or @elementFormDefault"))
+      new ValidationResult(doc, false, Vector("Missing or incorrect @attributeFormDefault and/or @elementFormDefault"))
     }
   }
 }

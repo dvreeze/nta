@@ -18,7 +18,7 @@ package eu.cdevreeze.nta
 package rule
 
 import scala.collection.immutable
-import common.document.SchemaDocument
+import common.document.{ SchemaDocument, Taxonomy }
 import common.validate.{ Validator, ValidationResult }
 import eu.cdevreeze.yaidom._
 
@@ -31,18 +31,18 @@ import eu.cdevreeze.yaidom._
  *
  * @author Chris de Vreeze
  */
-final class Validator_2_2_0_11 extends Validator[SchemaDocument] {
+final class Validator_2_2_0_11 extends Validator[SchemaDocument, Taxonomy] {
 
-  def apply(x: SchemaDocument): ValidationResult[SchemaDocument] = {
-    val adaptedRootElm = x.doc.documentElement.notUndeclaringPrefixes(Scope.Empty)
+  def validate(doc: SchemaDocument)(context: Taxonomy): ValidationResult[SchemaDocument] = {
+    val adaptedRootElm = doc.doc.documentElement.notUndeclaringPrefixes(Scope.Empty)
 
     val unusedNamespaceUrisIgnoringTns: Set[String] = unusedNamespacesIgnoringTns(Scope.Empty, adaptedRootElm)
-    val unusedNamespaceUris: Set[String] = unusedNamespaceUrisIgnoringTns diff x.targetNamespaceOption.toSet
+    val unusedNamespaceUris: Set[String] = unusedNamespaceUrisIgnoringTns diff doc.targetNamespaceOption.toSet
 
-    if (unusedNamespaceUris.isEmpty) ValidationResult.validResult(x)
+    if (unusedNamespaceUris.isEmpty) ValidationResult.validResult(doc)
     else {
       val messages = unusedNamespaceUris map { nsUri => "Namespace URI '%s' unused from the point it was declared".format(nsUri) }
-      new ValidationResult(x, false, messages.toIndexedSeq)
+      new ValidationResult(doc, false, messages.toIndexedSeq)
     }
   }
 

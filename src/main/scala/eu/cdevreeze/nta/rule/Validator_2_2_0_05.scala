@@ -17,7 +17,7 @@
 package eu.cdevreeze.nta
 package rule
 
-import common.document.SchemaDocument
+import common.document.{ SchemaDocument, Taxonomy }
 import common.validate.{ Validator, ValidationResult }
 
 /**
@@ -25,14 +25,14 @@ import common.validate.{ Validator, ValidationResult }
  *
  * @author Chris de Vreeze
  */
-final class Validator_2_2_0_05 extends Validator[SchemaDocument] {
+final class Validator_2_2_0_05 extends Validator[SchemaDocument, Taxonomy] {
 
-  def apply(x: SchemaDocument): ValidationResult[SchemaDocument] = {
-    val comments = x.doc.allComments
+  def validate(doc: SchemaDocument)(context: Taxonomy): ValidationResult[SchemaDocument] = {
+    val comments = doc.doc.allComments
 
-    if (comments.size <= 1) ValidationResult.validResult(x)
+    if (comments.size <= 1) ValidationResult.validResult(doc)
     else {
-      new ValidationResult(x, false, Vector("Number of comments: %d".format(comments.size)))
+      new ValidationResult(doc, false, Vector("Number of comments: %d".format(comments.size)))
     }
   }
 }

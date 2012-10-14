@@ -39,9 +39,7 @@ import common.parse.TaxonomyParser
 @RunWith(classOf[JUnitRunner])
 class NlTaxonomieTest extends FunSuite with BeforeAndAfterAll with TaxonomyParser {
 
-  @volatile private var taxonomyDocs: Map[URI, TaxonomyDocument] = _
-  @volatile private var schemaDocs: Map[URI, SchemaDocument] = _
-  @volatile private var linkbaseDocs: Map[URI, LinkbaseDocument] = _
+  @volatile private var taxonomy: Taxonomy = _
 
   override def beforeAll(): Unit = {
     val rootDir = new jio.File(classOf[NlTaxonomieTest].getResource("/extracted-taxonomies/www.nltaxonomie.nl/6.0").toURI)
@@ -56,23 +54,18 @@ class NlTaxonomieTest extends FunSuite with BeforeAndAfterAll with TaxonomyParse
       new URI("http://" + (localUriString.drop(idx + 1)))
     }
 
-    val docs: Map[URI, TaxonomyDocument] = parse(rootDir)(localUriToOriginalUri)
-    taxonomyDocs = docs
+    taxonomy = parse(rootDir)(localUriToOriginalUri)
 
-    // Mind the pattern matching on types inside the pair
-    schemaDocs = docs collect { case (uri: URI, d: SchemaDocument) => (uri -> d) }
-    logger.info("Found %d schema documents".format(schemaDocs.size))
+    logger.info("Found %d schema documents".format(taxonomy.schemas.size))
 
-    // Mind the pattern matching on types inside the pair
-    linkbaseDocs = docs collect { case (uri: URI, d: LinkbaseDocument) => (uri -> d) }
-    logger.info("Found %d linkbase documents".format(linkbaseDocs.size))
+    logger.info("Found %d linkbase documents".format(taxonomy.linkbases.size))
   }
 
   override def afterAll(): Unit = {
   }
 
   test("Schemas must have a targetNamespace") {
-    val offendingSchemas = schemaDocs filter { case (uri, doc) => doc.targetNamespaceOption.isEmpty }
+    val offendingSchemas = taxonomy.schemas filter { case (uri, doc) => doc.targetNamespaceOption.isEmpty }
 
     expect(Set()) {
       offendingSchemas.keySet
@@ -80,20 +73,20 @@ class NlTaxonomieTest extends FunSuite with BeforeAndAfterAll with TaxonomyParse
   }
 
   test("Schema element definitions (top level) always have IDs") {
-    val offendingElemDefs: Map[URI, Seq[Elem]] = schemaDocs flatMap {
+    val offendingElemDefs: Map[URI, Seq[Elem]] = taxonomy.schemas flatMap {
       case (uri, doc) =>
         val topLevelElmDefsWithoutId = doc.topLevelElementDeclarations filter { e => e.attributeOption(EName("id")).isEmpty }
         if (topLevelElmDefsWithoutId.isEmpty) None else Some(uri -> topLevelElmDefsWithoutId)
     }
 
     // Alas, there is one schema file in which a top level element definition has no id attribute...
-    val expectedOffendingSchemaUris = schemaDocs.keySet filter { _.getPath.endsWith("xbrl-syntax-extension.xsd") }
+    val expectedOffendingSchemaUris = taxonomy.schemas.keySet filter { _.getPath.endsWith("xbrl-syntax-extension.xsd") }
     expect(1) {
       expectedOffendingSchemaUris.size
     }
 
     // Mind the filtering using a Set as Boolean function!
-    val expectedOffendingSchema = schemaDocs.filterKeys(expectedOffendingSchemaUris).values.head
+    val expectedOffendingSchema = taxonomy.schemas.filterKeys(expectedOffendingSchemaUris).values.head
     assert(expectedOffendingSchema.topLevelElementDeclarations exists (e => e.attributeOption(EName("id")).isEmpty))
 
     expect(expectedOffendingSchemaUris) {
@@ -102,7 +95,7 @@ class NlTaxonomieTest extends FunSuite with BeforeAndAfterAll with TaxonomyParse
   }
 
   test("Nested schema element definitions have no IDs") {
-    val nestedElemDefs: Map[URI, Seq[Elem]] = schemaDocs mapValues { doc =>
+    val nestedElemDefs: Map[URI, Seq[Elem]] = taxonomy.schemas mapValues { doc =>
       val nestedElmDefsWithPaths = doc.elementDeclarationsWithPaths filter { case (p, e) => p.entries.count(_.elementName.localPart == "element") >= 2 }
       val nestedElmDefs: immutable.IndexedSeq[Elem] = nestedElmDefsWithPaths map { _._2 }
       nestedElmDefs
@@ -122,7 +115,7 @@ class NlTaxonomieTest extends FunSuite with BeforeAndAfterAll with TaxonomyParse
   }
 
   test("Linkbases are all of a known linkbase type (looking at child elements)") {
-    val linkbaseChildElmNames: Map[URI, Set[EName]] = linkbaseDocs mapValues { doc =>
+    val linkbaseChildElmNames: Map[URI, Set[EName]] = taxonomy.linkbases mapValues { doc =>
       val childElmNames = doc.doc.documentElement.allChildElems map { e => e.resolvedName }
       childElmNames.toSet
     }
@@ -146,7 +139,7 @@ class NlTaxonomieTest extends FunSuite with BeforeAndAfterAll with TaxonomyParse
   }
 
   test("All locators and resources in linkbases have a (non-empty) label") {
-    val offendingResourcesAndLocators: Map[URI, immutable.IndexedSeq[xlink.XLink]] = linkbaseDocs mapValues { doc =>
+    val offendingResourcesAndLocators: Map[URI, immutable.IndexedSeq[xlink.XLink]] = taxonomy.linkbases mapValues { doc =>
       val allXLinkElms = doc.doc.documentElement filterElems { e => XLink.mustBeXLink(e) }
       val resources = allXLinkElms collect { case e if XLink.mustBeResource(e) => Resource(e) }
       val locators = allXLinkElms collect { case e if XLink.mustBeLocator(e) => Locator(e) }

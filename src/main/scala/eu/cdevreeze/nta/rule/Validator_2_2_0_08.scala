@@ -17,7 +17,7 @@
 package eu.cdevreeze.nta
 package rule
 
-import common.document.SchemaDocument
+import common.document.{ SchemaDocument, Taxonomy }
 import common.validate.{ Validator, ValidationResult }
 import eu.cdevreeze.yaidom.EName
 
@@ -26,12 +26,12 @@ import eu.cdevreeze.yaidom.EName
  *
  * @author Chris de Vreeze
  */
-final class Validator_2_2_0_08 extends Validator[SchemaDocument] {
+final class Validator_2_2_0_08 extends Validator[SchemaDocument, Taxonomy] {
 
-  def apply(x: SchemaDocument): ValidationResult[SchemaDocument] = {
-    if (x.doc.documentElement.attributeOption(EName("targetNamespace")).isDefined) ValidationResult.validResult(x)
+  def validate(doc: SchemaDocument)(context: Taxonomy): ValidationResult[SchemaDocument] = {
+    if (doc.doc.documentElement.attributeOption(EName("targetNamespace")).isDefined) ValidationResult.validResult(doc)
     else {
-      new ValidationResult(x, false, Vector("Missing @targetNamespace"))
+      new ValidationResult(doc, false, Vector("Missing @targetNamespace"))
     }
   }
 }

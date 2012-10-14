@@ -25,4 +25,7 @@ import scala.collection.immutable
  *
  * @author Chris de Vreeze
  */
-trait Validator[A] extends (A => ValidationResult[A])
+trait Validator[A, B] {
+
+  def validate(x: A)(context: B): ValidationResult[A]
+}

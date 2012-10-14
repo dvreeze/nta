@@ -39,9 +39,7 @@ import rule._
 @RunWith(classOf[JUnitRunner])
 class ValidatorTest extends FunSuite with BeforeAndAfterAll with TaxonomyParser {
 
-  @volatile private var taxonomyDocs: Map[URI, TaxonomyDocument] = _
-  @volatile private var schemaDocs: Map[URI, SchemaDocument] = _
-  @volatile private var linkbaseDocs: Map[URI, LinkbaseDocument] = _
+  @volatile private var taxonomy: Taxonomy = _
 
   override def beforeAll(): Unit = {
     val rootDir = new jio.File(classOf[NlTaxonomieTest].getResource("/extracted-taxonomies/www.nltaxonomie.nl/6.0").toURI)
@@ -56,16 +54,11 @@ class ValidatorTest extends FunSuite with BeforeAndAfterAll with TaxonomyParser 
       new URI("http://" + (localUriString.drop(idx + 1)))
     }
 
-    val docs: Map[URI, TaxonomyDocument] = parse(rootDir)(localUriToOriginalUri)
-    taxonomyDocs = docs
+    taxonomy = parse(rootDir)(localUriToOriginalUri)
 
-    // Mind the pattern matching on types inside the pair
-    schemaDocs = docs collect { case (uri: URI, d: SchemaDocument) => (uri -> d) }
-    logger.info("Found %d schema documents".format(schemaDocs.size))
+    logger.info("Found %d schema documents".format(taxonomy.schemas.size))
 
-    // Mind the pattern matching on types inside the pair
-    linkbaseDocs = docs collect { case (uri: URI, d: LinkbaseDocument) => (uri -> d) }
-    logger.info("Found %d linkbase documents".format(linkbaseDocs.size))
+    logger.info("Found %d linkbase documents".format(taxonomy.linkbases.size))
   }
 
   override def afterAll(): Unit = {
@@ -108,10 +101,10 @@ class ValidatorTest extends FunSuite with BeforeAndAfterAll with TaxonomyParser 
 
   test("Test 2.2.0.14") {
     val validator = new Validator_2_2_0_14
-    val offendingSchemas = schemaDocs filter { case (uri, doc) => !validator(doc).isValid }
+    val offendingSchemas = taxonomy.schemas filter { case (uri, doc) => !validator.validate(doc)(taxonomy).isValid }
 
     // There are many offending schemas, with one or more xs:import child elements...
-    val expectedOffendingSchemas = schemaDocs filter {
+    val expectedOffendingSchemas = taxonomy.schemas filter {
       case (uri, doc) =>
         val ns = SchemaDocument.NS
         val matchingElms = doc.doc.documentElement filterChildElems { e => e.resolvedName == EName(ns, "import") }
@@ -130,17 +123,17 @@ class ValidatorTest extends FunSuite with BeforeAndAfterAll with TaxonomyParser 
 
   test("Test 2.2.0.22") {
     val validator = new Validator_2_2_0_22
-    val offendingSchemas = schemaDocs filter { case (uri, doc) => !validator(doc).isValid }
+    val offendingSchemas = taxonomy.schemas filter { case (uri, doc) => !validator.validate(doc)(taxonomy).isValid }
 
     // There is an offending schema...
-    val expectedOffendingSchemas = schemaDocs filter { case (uri, doc) => uri.toString.endsWith("/basis/bd/types/bd-codes.xsd") }
+    val expectedOffendingSchemas = taxonomy.schemas filter { case (uri, doc) => uri.toString.endsWith("/basis/bd/types/bd-codes.xsd") }
     expect(expectedOffendingSchemas.keySet) {
       offendingSchemas.keySet
     }
   }
 
-  private def performTest(validator: Validator[SchemaDocument]) {
-    val offendingSchemas = schemaDocs filter { case (uri, doc) => !validator(doc).isValid }
+  private def performTest(validator: Validator[SchemaDocument, Taxonomy]) {
+    val offendingSchemas = taxonomy.schemas filter { case (uri, doc) => !validator.validate(doc)(taxonomy).isValid }
 
     expect(Set()) {
       offendingSchemas.keySet

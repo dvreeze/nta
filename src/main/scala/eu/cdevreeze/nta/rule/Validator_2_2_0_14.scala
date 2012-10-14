@@ -17,7 +17,7 @@
 package eu.cdevreeze.nta
 package rule
 
-import common.document.SchemaDocument
+import common.document.{ SchemaDocument, Taxonomy }
 import common.validate.{ Validator, ValidationResult }
 import eu.cdevreeze.yaidom._
 
@@ -26,25 +26,25 @@ import eu.cdevreeze.yaidom._
  *
  * @author Chris de Vreeze
  */
-final class Validator_2_2_0_14 extends Validator[SchemaDocument] {
+final class Validator_2_2_0_14 extends Validator[SchemaDocument, Taxonomy] {
 
-  def apply(x: SchemaDocument): ValidationResult[SchemaDocument] = {
+  def validate(doc: SchemaDocument)(context: Taxonomy): ValidationResult[SchemaDocument] = {
     val ns = SchemaDocument.NS
 
-    val matchingElmPaths = x.doc.documentElement filterElemOrSelfPaths { e => e.resolvedName == EName(ns, "import") }
+    val matchingElmPaths = doc.doc.documentElement filterElemOrSelfPaths { e => e.resolvedName == EName(ns, "import") }
 
     val rejectedElmPaths = matchingElmPaths filter { path =>
       assert(path.lastEntry.elementName == EName(ns, "import"))
-      assert(path.lastEntry.elementName == x.doc.documentElement.getWithElemPath(path).resolvedName)
+      assert(path.lastEntry.elementName == doc.doc.documentElement.getWithElemPath(path).resolvedName)
 
       path.entries.size < 3 ||
         path.parentPath.lastEntry.elementName != EName(SchemaDocument.NS, "appinfo") ||
         path.parentPath.parentPath.lastEntry.elementName != EName(SchemaDocument.NS, "annotation")
     }
 
-    if (rejectedElmPaths.isEmpty) ValidationResult.validResult(x)
+    if (rejectedElmPaths.isEmpty) ValidationResult.validResult(doc)
     else {
-      new ValidationResult(x, false, Vector("Not all xs:import elements have 'parent path' //xs:annotation/xs:appinfo"))
+      new ValidationResult(doc, false, Vector("Not all xs:import elements have 'parent path' //xs:annotation/xs:appinfo"))
     }
   }
 }

@@ -17,7 +17,7 @@
 package eu.cdevreeze.nta
 package rule
 
-import common.document.SchemaDocument
+import common.document.{ SchemaDocument, Taxonomy }
 import common.validate.{ Validator, ValidationResult }
 import eu.cdevreeze.yaidom.EName
 
@@ -27,17 +27,17 @@ import eu.cdevreeze.yaidom.EName
  *
  * @author Chris de Vreeze
  */
-final class Validator_2_2_0_10 extends Validator[SchemaDocument] {
+final class Validator_2_2_0_10 extends Validator[SchemaDocument, Taxonomy] {
 
-  def apply(x: SchemaDocument): ValidationResult[SchemaDocument] = {
-    val rootElm = x.doc.documentElement
+  def validate(doc: SchemaDocument)(context: Taxonomy): ValidationResult[SchemaDocument] = {
+    val rootElm = doc.doc.documentElement
     val ok = rootElm.attributeOption(EName("blockDefault")).isEmpty &&
       rootElm.attributeOption(EName("finalDefault")).isEmpty &&
       rootElm.attributeOption(EName("version")).isEmpty
 
-    if (ok) ValidationResult.validResult(x)
+    if (ok) ValidationResult.validResult(doc)
     else {
-      new ValidationResult(x, false, Vector("There must be no @blockDefault, @finalDefault and @version attributes"))
+      new ValidationResult(doc, false, Vector("There must be no @blockDefault, @finalDefault and @version attributes"))
     }
   }
 }

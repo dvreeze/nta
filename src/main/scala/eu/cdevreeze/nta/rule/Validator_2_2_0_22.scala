@@ -17,7 +17,7 @@
 package eu.cdevreeze.nta
 package rule
 
-import common.document.SchemaDocument
+import common.document.{ SchemaDocument, Taxonomy }
 import common.validate.{ Validator, ValidationResult }
 import eu.cdevreeze.yaidom._
 
@@ -26,14 +26,14 @@ import eu.cdevreeze.yaidom._
  *
  * @author Chris de Vreeze
  */
-final class Validator_2_2_0_22 extends Validator[SchemaDocument] {
+final class Validator_2_2_0_22 extends Validator[SchemaDocument, Taxonomy] {
 
-  def apply(x: SchemaDocument): ValidationResult[SchemaDocument] = {
-    val matchingElms = x.doc.documentElement filterElemsOrSelf { e => e.resolvedName == EName(SchemaDocument.NS, "annotation") }
+  def validate(doc: SchemaDocument)(context: Taxonomy): ValidationResult[SchemaDocument] = {
+    val matchingElms = doc.doc.documentElement filterElemsOrSelf { e => e.resolvedName == EName(SchemaDocument.NS, "annotation") }
 
-    if (matchingElms.size <= 1) ValidationResult.validResult(x)
+    if (matchingElms.size <= 1) ValidationResult.validResult(doc)
     else {
-      new ValidationResult(x, false, Vector("There are >= 2 xs:annotation elements in the schema document"))
+      new ValidationResult(doc, false, Vector("There are >= 2 xs:annotation elements in the schema document"))
     }
   }
 }
