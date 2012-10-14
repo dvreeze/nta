@@ -49,7 +49,14 @@ class ValidatorTest extends FunSuite with BeforeAndAfterAll with TaxonomyParser 
       rootDir.isDirectory && rootDir.exists,
       "Expected root directory %s. Extract file /compressed-taxonomies/www.nltaxonomie.nl-6.0.zip into this directory".format(rootDir.getPath))
 
-    val docs: Map[URI, TaxonomyDocument] = parse(rootDir)
+    def localUriToOriginalUri(localUri: URI): URI = {
+      val localUriString = localUri.toString
+      val idx = localUriString.indexOf("/www.nltaxonomie.nl/6.0")
+      require(idx > 0, "Expected '6.0' URI, but found '%s'".format(localUriString))
+      new URI("http://" + (localUriString.drop(idx + 1)))
+    }
+
+    val docs: Map[URI, TaxonomyDocument] = parse(rootDir)(localUriToOriginalUri)
     taxonomyDocs = docs
 
     // Mind the pattern matching on types inside the pair

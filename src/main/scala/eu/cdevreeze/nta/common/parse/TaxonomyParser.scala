@@ -35,7 +35,7 @@ trait TaxonomyParser {
 
   private val docParser = eu.cdevreeze.yaidom.parse.DocumentParserUsingDom.newInstance
 
-  final def parse(rootDir: jio.File): Map[URI, TaxonomyDocument] = {
+  final def parse(rootDir: jio.File)(localUriToOriginalUri: URI => URI): Map[URI, TaxonomyDocument] = {
     require(rootDir.isDirectory && rootDir.exists, "Expected root directory %s".format(rootDir.getPath))
 
     val files = findAllFiles(rootDir)
@@ -47,12 +47,7 @@ trait TaxonomyParser {
           val doc = docParser.parse(new jio.FileInputStream(f))
 
           val localUri = f.toURI
-          val originalUri = {
-            val localUriString = localUri.toString
-            val idx = localUriString.indexOf("/www.nltaxonomie.nl/6.0")
-            require(idx > 0, "Expected '6.0' URI, but found '%s'".format(localUriString))
-            new URI("http://" + (localUriString.drop(idx + 1)))
-          }
+          val originalUri = localUriToOriginalUri(localUri)
 
           if (doc.documentElement.resolvedName.namespaceUriOption == Some(SchemaDocument.NS))
             Some(localUri -> new SchemaDocument(originalUri, localUri, doc))
