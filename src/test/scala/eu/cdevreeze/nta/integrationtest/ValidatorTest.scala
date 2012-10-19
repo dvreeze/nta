@@ -66,37 +66,37 @@ class ValidatorTest extends FunSuite with BeforeAndAfterAll with TaxonomyParser 
 
   test("Test 2.2.0.05") {
     val validator = new Validator_2_2_0_05
-    performTest(validator)
+    performSchemaTest(validator)
   }
 
   test("Test 2.2.0.06") {
     val validator = new Validator_2_2_0_06
-    performTest(validator)
+    performSchemaTest(validator)
   }
 
   test("Test 2.2.0.08") {
     val validator = new Validator_2_2_0_08
-    performTest(validator)
+    performSchemaTest(validator)
   }
 
   test("Test 2.2.0.09") {
     val validator = new Validator_2_2_0_09
-    performTest(validator)
+    performSchemaTest(validator)
   }
 
   test("Test 2.2.0.10") {
     val validator = new Validator_2_2_0_10
-    performTest(validator)
+    performSchemaTest(validator)
   }
 
   ignore("Test 2.2.0.11") {
     val validator = new Validator_2_2_0_11
-    performTest(validator)
+    performSchemaTest(validator)
   }
 
   test("Test 2.2.0.12") {
     val validator = new Validator_2_2_0_12
-    performTest(validator)
+    performSchemaTest(validator)
   }
 
   test("Test 2.2.0.14") {
@@ -118,7 +118,7 @@ class ValidatorTest extends FunSuite with BeforeAndAfterAll with TaxonomyParser 
 
   test("Test 2.2.0.18") {
     val validator = new Validator_2_2_0_18
-    performTest(validator)
+    performSchemaTest(validator)
   }
 
   test("Test 2.2.0.22") {
@@ -132,7 +132,7 @@ class ValidatorTest extends FunSuite with BeforeAndAfterAll with TaxonomyParser 
     }
   }
 
-  private def performTest(validator: Validator[SchemaDocument, Taxonomy]) {
+  private def performSchemaTest(validator: Validator[SchemaDocument, Taxonomy]) {
     val offendingSchemas = taxonomy.schemas filter { case (uri, doc) => !validator.validate(doc)(taxonomy).isValid }
 
     expect(Set()) {

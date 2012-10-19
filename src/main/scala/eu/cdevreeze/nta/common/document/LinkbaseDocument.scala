@@ -19,15 +19,15 @@ package common
 package document
 
 import java.net.URI
-import eu.cdevreeze.yaidom.{ Document, Elem, EName, QName }
+import eu.cdevreeze.yaidom.{ Document, Elem, EName, QName, xlink }
 import LinkbaseDocument._
 
 /**
- * XBRL linkbase document.
+ * XBRL linkbase document. May be overridden.
  *
  * @author Chris de Vreeze
  */
-final class LinkbaseDocument(
+class LinkbaseDocument(
   override val originalUri: URI,
   override val localUri: URI,
   override val doc: Document) extends TaxonomyDocument {
@@ -42,6 +42,16 @@ final class LinkbaseDocument(
   require(localUri.getFragment eq null, "The local URI '%s' has a fragment".format(localUri))
 
   require(doc.documentElement.resolvedName == EName(NS, "linkbase"))
+
+  final def labelToXLinkMap: Map[String, xlink.XLink] = {
+    val locators = doc.documentElement collectFromElems { case e if xlink.XLink.mustBeLocator(e) => xlink.Locator(e) } filter
+      { _.labelOption.isDefined }
+    val resources = doc.documentElement collectFromElems { case e if xlink.XLink.mustBeResource(e) => xlink.Resource(e) } filter
+      { _.labelOption.isDefined }
+    val locatorMap = locators.map(xlink => (xlink.labelOption.get -> xlink)).toMap
+    val resourceMap = resources.map(xlink => (xlink.labelOption.get -> xlink)).toMap
+    locatorMap ++ resourceMap
+  }
 }
 
 object LinkbaseDocument {

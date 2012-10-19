@@ -155,4 +155,85 @@ class NlTaxonomieTest extends FunSuite with BeforeAndAfterAll with TaxonomyParse
       offendingResourcesAndLocators.keySet
     }
   }
+
+  test("Only known substitution groups") {
+    val substitutionGroups: Map[URI, Set[EName]] = taxonomy.schemas mapValues { doc =>
+      val elementDecls = doc.elementDeclarationsWithPaths.map(_._2)
+      val substitutionGroups = elementDecls flatMap { e =>
+        val attrOption = e.attributeOption(EName("substitutionGroup"))
+        attrOption flatMap { a => e.scope.resolveQName(QName(a)) }
+      }
+      substitutionGroups.toSet
+    }
+
+    val expectedGroups: Set[EName] = Set(
+      EName("{http://www.xbrl.org/2003/instance}item"),
+      EName("{http://www.xbrl.org/2003/instance}tuple"),
+      EName("{http://xbrl.org/2005/xbrldt}hypercubeItem"),
+      EName("{http://xbrl.org/2005/xbrldt}dimensionItem"),
+      EName("{http://www.nltaxonomie.nl/6.0/basis/sbr/xbrl/xbrl-syntax-extension}domainItem"),
+      EName("{http://www.nltaxonomie.nl/6.0/basis/sbr/xbrl/xbrl-syntax-extension}domainMemberItem"),
+      EName("{http://www.nltaxonomie.nl/6.0/basis/sbr/xbrl/xbrl-syntax-extension}presentationItem"),
+      EName("{http://www.nltaxonomie.nl/6.0/basis/sbr/xbrl/xbrl-syntax-extension}presentationTuple"),
+      EName("{http://www.nltaxonomie.nl/6.0/basis/sbr/xbrl/xbrl-syntax-extension}specificationTuple"),
+      EName("{http://www.nltaxonomie.nl/6.0/basis/sbr/xbrl/xbrl-syntax-extension}primaryDomainItem"),
+      EName("{http://www.xbrl.org/2003/XLink}resource"))
+
+    val unexpectedSubstitutionGroups: Map[URI, Set[EName]] = substitutionGroups mapValues { (groups: Set[EName]) =>
+      groups diff expectedGroups
+    } filter { case (uri, groups) => !groups.isEmpty }
+
+    expect(Set()) {
+      unexpectedSubstitutionGroups.keySet
+    }
+  }
+
+  test("Syntax extensions are for tuples and items only") {
+    val extensionDocOption: Option[SchemaDocument] = {
+      val result = taxonomy.schemas find { case (uri, doc) => uri.toString.endsWith("xbrl-syntax-extension.xsd") }
+      result map { _._2 }
+    }
+
+    assert(extensionDocOption.isDefined)
+
+    val extensionDoc: SchemaDocument = extensionDocOption.get
+
+    val ns = "http://www.nltaxonomie.nl/6.0/basis/sbr/xbrl/xbrl-syntax-extension"
+
+    expect(Some(ns)) {
+      extensionDoc.targetNamespaceOption
+    }
+
+    def substitutionGroupOption(e: Elem): Option[EName] = {
+      val attrValue = e.attributeOption(EName("substitutionGroup"))
+      attrValue flatMap { a => e.scope.resolveQName(QName(a)) }
+    }
+
+    val searchedItemOrTupleSubstitutionGroupDecls = extensionDoc.topLevelElementDeclarations filter { e =>
+      val isItemOrTupleDecl =
+        substitutionGroupOption(e) == Some(EName("{http://www.xbrl.org/2003/instance}item")) ||
+          substitutionGroupOption(e) == Some(EName("{http://www.xbrl.org/2003/instance}tuple"))
+
+      val isAbstract = e.attributeOption(EName("abstract")) == Some("true")
+
+      isItemOrTupleDecl && isAbstract
+    }
+
+    val definedItemOrTupleSubstitutionGroups = {
+      val result = searchedItemOrTupleSubstitutionGroupDecls map { e => EName(ns, e.attribute(EName("name"))) }
+      result.toSet
+    }
+
+    val expectedSubstitutionGroups = Set(
+      EName(ns, "domainItem"),
+      EName(ns, "domainMemberItem"),
+      EName(ns, "presentationItem"),
+      EName(ns, "presentationTuple"),
+      EName(ns, "specificationTuple"),
+      EName(ns, "primaryDomainItem"))
+
+    expect(expectedSubstitutionGroups) {
+      definedItemOrTupleSubstitutionGroups
+    }
+  }
 }
