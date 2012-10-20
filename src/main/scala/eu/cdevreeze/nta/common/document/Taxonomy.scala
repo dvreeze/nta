@@ -45,6 +45,11 @@ final class Taxonomy(
     "All documents must be indexed by the local URI")
 
   def taxonomyDocuments: Map[URI, TaxonomyDocument] = schemas ++ linkbases ++ otherDocuments
+
+  def ++(other: Taxonomy): Taxonomy = new Taxonomy(
+    schemas = this.schemas ++ other.schemas,
+    linkbases = this.linkbases ++ other.linkbases,
+    otherDocuments = this.otherDocuments ++ other.otherDocuments)
 }
 
 object Taxonomy {

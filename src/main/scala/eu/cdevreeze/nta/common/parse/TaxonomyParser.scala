@@ -35,6 +35,13 @@ trait TaxonomyParser {
 
   private val docParser = eu.cdevreeze.yaidom.parse.DocumentParserUsingDom.newInstance
 
+  /**
+   * Parses a "taxonomy" (using this term loosely) from a root directory, with a given function mapping local URIs to
+   * the original URIs.
+   *
+   * If multiple roots should be parsed, simply call this method repeatedly on those different roots, and combine the
+   * resulting `Taxonomy` instances using method `++`.
+   */
   final def parse(rootDir: jio.File)(localUriToOriginalUri: URI => URI): Taxonomy = {
     require(rootDir.isDirectory && rootDir.exists, "Expected root directory %s".format(rootDir.getPath))
 
@@ -49,8 +56,14 @@ trait TaxonomyParser {
           val localUri = f.toURI
           val originalUri = localUriToOriginalUri(localUri)
 
+          // TODO Recognizing linkbases is now hard-coded and very brittle. Refactor.
+
           if (doc.documentElement.resolvedName.namespaceUriOption == Some(SchemaDocument.NS))
             Some(new SchemaDocument(originalUri, localUri, doc))
+          else if (doc.documentElement.resolvedName.namespaceUriOption == Some(LinkbaseDocument.NS) &&
+            doc.documentElement.findChildElem(EName(LinkbaseDocument.NS, "labelLink")).isDefined)
+
+            Some(new LabelLinkbaseDocument(originalUri, localUri, doc))
           else if (doc.documentElement.resolvedName.namespaceUriOption == Some(LinkbaseDocument.NS))
             Some(new LinkbaseDocument(originalUri, localUri, doc))
           else None

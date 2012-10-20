@@ -19,6 +19,7 @@ package common
 package document
 
 import java.net.URI
+import scala.collection.immutable
 import eu.cdevreeze.yaidom.{ Document, Elem, EName, QName, xlink }
 import LinkbaseDocument._
 
@@ -43,14 +44,25 @@ class LinkbaseDocument(
 
   require(doc.documentElement.resolvedName == EName(NS, "linkbase"))
 
-  final def labelToXLinkMap: Map[String, xlink.XLink] = {
-    val locators = doc.documentElement collectFromElems { case e if xlink.XLink.mustBeLocator(e) => xlink.Locator(e) } filter
-      { _.labelOption.isDefined }
-    val resources = doc.documentElement collectFromElems { case e if xlink.XLink.mustBeResource(e) => xlink.Resource(e) } filter
-      { _.labelOption.isDefined }
+  final def extendedLinks: immutable.IndexedSeq[xlink.ExtendedLink] =
+    doc.documentElement collectFromElemsOrSelf { case e if xlink.XLink.mustBeExtendedLink(e) => xlink.ExtendedLink(e) }
+
+  final def labelToXLinkMap(extendedLink: xlink.ExtendedLink): Map[String, xlink.XLink] = {
+    val locators = extendedLink.locatorXLinks filter { _.labelOption.isDefined }
+    val resources = extendedLink.resourceXLinks filter { _.labelOption.isDefined }
     val locatorMap = locators.map(xlink => (xlink.labelOption.get -> xlink)).toMap
     val resourceMap = resources.map(xlink => (xlink.labelOption.get -> xlink)).toMap
     locatorMap ++ resourceMap
+  }
+
+  final def locatorLabelToHrefMap(extendedLink: xlink.ExtendedLink): Map[String, URI] = {
+    val locators = extendedLink.locatorXLinks filter { _.labelOption.isDefined }
+    val locatorHrefs = locators map { xlink => (xlink.labelOption.get -> xlink.href) }
+    locatorHrefs.toMap
+  }
+
+  final def locatorLabelToLocalUriMap(extendedLink: xlink.ExtendedLink): Map[String, URI] = {
+    locatorLabelToHrefMap(extendedLink) mapValues { href => localUri.resolve(href) }
   }
 }
 
