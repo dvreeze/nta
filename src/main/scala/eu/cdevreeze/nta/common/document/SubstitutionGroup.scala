@@ -32,9 +32,9 @@ final class SubstitutionGroup(val name: EName, val parentGroupOption: Option[Sub
   require(name ne null)
   require(parentGroupOption ne null)
 
-  def isItem: Boolean = (this == SubstitutionGroup.Item) || (parentGroupOption.getOrElse(this).isItem)
+  def isItem: Boolean = (this == SubstitutionGroup.Item) || (parentGroupOption.exists(_.isItem))
 
-  def isTuple: Boolean = (this == SubstitutionGroup.Tuple) || (parentGroupOption.getOrElse(this).isTuple)
+  def isTuple: Boolean = (this == SubstitutionGroup.Tuple) || (parentGroupOption.exists(_.isTuple))
 
   def ::(newName: EName): SubstitutionGroup = new SubstitutionGroup(newName, Some(this))
 
