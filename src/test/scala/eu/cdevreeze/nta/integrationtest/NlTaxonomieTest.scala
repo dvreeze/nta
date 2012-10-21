@@ -188,6 +188,27 @@ class NlTaxonomieTest extends FunSuite with BeforeAndAfterAll with TaxonomyParse
     }
   }
 
+  test("Only known substitution groups found by taxonomy itself") {
+    val substitutionGroups: Set[EName] = taxonomy.findSubstitutionGroupNames
+
+    val expectedGroupNames: Set[EName] = Set(
+      EName("{http://www.xbrl.org/2003/instance}item"),
+      EName("{http://www.xbrl.org/2003/instance}tuple"),
+      EName("{http://xbrl.org/2005/xbrldt}hypercubeItem"),
+      EName("{http://xbrl.org/2005/xbrldt}dimensionItem"),
+      EName("{http://www.nltaxonomie.nl/6.0/basis/sbr/xbrl/xbrl-syntax-extension}domainItem"),
+      EName("{http://www.nltaxonomie.nl/6.0/basis/sbr/xbrl/xbrl-syntax-extension}domainMemberItem"),
+      EName("{http://www.nltaxonomie.nl/6.0/basis/sbr/xbrl/xbrl-syntax-extension}presentationItem"),
+      EName("{http://www.nltaxonomie.nl/6.0/basis/sbr/xbrl/xbrl-syntax-extension}presentationTuple"),
+      EName("{http://www.nltaxonomie.nl/6.0/basis/sbr/xbrl/xbrl-syntax-extension}specificationTuple"),
+      EName("{http://www.nltaxonomie.nl/6.0/basis/sbr/xbrl/xbrl-syntax-extension}primaryDomainItem"),
+      EName("{http://www.xbrl.org/2003/XLink}resource"))
+
+    expect(expectedGroupNames) {
+      substitutionGroups
+    }
+  }
+
   test("Syntax extensions are for tuples and items only") {
     val extensionDocOption: Option[SchemaDocument] = {
       val result = taxonomy.schemas find { case (uri, doc) => uri.toString.endsWith("xbrl-syntax-extension.xsd") }
