@@ -54,7 +54,9 @@ class ValidatorTest extends FunSuite with BeforeAndAfterAll with TaxonomyParser 
       new URI("http://" + (localUriString.drop(idx + 1)))
     }
 
-    taxonomy = parse(rootDir)(localUriToOriginalUri)
+    val rawTaxonomy = parse(rootDir)(localUriToOriginalUri)
+    // Let's make the Taxonomy useful
+    taxonomy = rawTaxonomy.withFoundSubstitutionGroups
 
     logger.info("Found %d schema documents".format(taxonomy.schemas.size))
 
@@ -128,6 +130,22 @@ class ValidatorTest extends FunSuite with BeforeAndAfterAll with TaxonomyParser 
     // There is an offending schema...
     val expectedOffendingSchemas = taxonomy.schemas filter { case (uri, doc) => uri.toString.endsWith("/basis/bd/types/bd-codes.xsd") }
     expect(expectedOffendingSchemas.keySet) {
+      offendingSchemas.keySet
+    }
+  }
+
+  test("Test 2.2.1.02") {
+    val validator = new Validator_2_2_1_02
+    performSchemaTest(validator)
+  }
+
+  test("Test 2.2.2.26") {
+    val validator = new Validator_2_2_2_26
+    val offendingSchemas = taxonomy.schemas filter { case (uri, doc) => !validator.validate(doc)(taxonomy).isValid }
+
+    // Note that the schema /basis/sbr/types/uncefact66411-measures-2001.xsd has linkbaseRefs with a capital C where small case is needed!
+
+    expect(Set()) {
       offendingSchemas.keySet
     }
   }

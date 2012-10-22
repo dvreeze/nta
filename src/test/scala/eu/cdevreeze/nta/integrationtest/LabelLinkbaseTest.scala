@@ -83,7 +83,7 @@ class LabelLinkbaseTest extends FunSuite with BeforeAndAfterAll with TaxonomyPar
 
     val extendedLink = labelLinkbase.extendedLinks.head
 
-    val labelUris: Map[URI, xlink.Resource] = labelLinkbase.conceptLabelsByConceptUris(extendedLink)
+    val labelUris: Map[URI, xlink.Resource] = labelLinkbase.standardConceptLabelsByConceptUris(extendedLink)
 
     assert(!conceptUris.keySet.intersect(labelUris.keySet).isEmpty)
 
@@ -113,11 +113,16 @@ class LabelLinkbaseTest extends FunSuite with BeforeAndAfterAll with TaxonomyPar
       val resources = matchingLabelUris.filterKeys(companyConceptUris) map { _._2 }
       resources.headOption
     }
+    // Yes, attributes in the "xml" namespace are picked up nicely by yaidom
     val companyLabelLangOption = companyLabelOption flatMap { _.wrappedElem \@ "lang" }
     val companyLabelTextOption = companyLabelOption map { _.wrappedElem.text }
 
     expect(Some("nl")) {
       companyLabelLangOption
+    }
+
+    expect(Some("nl")) {
+      companyLabelOption flatMap { _.wrappedElem \@ EName("http://www.w3.org/XML/1998/namespace", "lang") }
     }
 
     expect(Some("Bedrijf")) {
@@ -147,11 +152,16 @@ class LabelLinkbaseTest extends FunSuite with BeforeAndAfterAll with TaxonomyPar
       val resources = matchingLabelUris.filterKeys(currentConceptUris) map { _._2 }
       resources.headOption
     }
+    // Yes, attributes in the "xml" namespace are picked up nicely by yaidom
     val currentLabelLangOption = currentLabelOption flatMap { _.wrappedElem \@ "lang" }
     val currentLabelTextOption = currentLabelOption map { _.wrappedElem.text }
 
     expect(Some("nl")) {
       currentLabelLangOption
+    }
+
+    expect(Some("nl")) {
+      currentLabelOption flatMap { _.wrappedElem \@ EName("http://www.w3.org/XML/1998/namespace", "lang") }
     }
 
     expect(Some("Huidig jaar")) {

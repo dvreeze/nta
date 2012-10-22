@@ -156,6 +156,36 @@ class NlTaxonomieTest extends FunSuite with BeforeAndAfterAll with TaxonomyParse
     }
   }
 
+  test("Only top level element declarations have substitution groups") {
+    val offendingElmDecls: Map[URI, immutable.Seq[Elem]] = taxonomy.schemas mapValues { doc =>
+      val nestedElmDecls = doc.elementDeclarationsWithPaths filter {
+        case (p, e) =>
+          p.entries.map(_.elementName).count(_ == EName(SchemaDocument.NS, "element")) >= 2
+      } map { _._2 }
+
+      nestedElmDecls filter { e => e.attributeOption(EName("substitutionGroup")).isDefined }
+    } filter { case (uri, elms) => !elms.isEmpty }
+
+    expect(Map()) {
+      offendingElmDecls
+    }
+  }
+
+  test("Nested element declarations all have a ref attribute") {
+    val offendingElmDecls: Map[URI, immutable.Seq[Elem]] = taxonomy.schemas mapValues { doc =>
+      val nestedElmDecls = doc.elementDeclarationsWithPaths filter {
+        case (p, e) =>
+          p.entries.map(_.elementName).count(_ == EName(SchemaDocument.NS, "element")) >= 2
+      } map { _._2 }
+
+      nestedElmDecls filter { e => e.attributeOption(EName("ref")).isEmpty }
+    } filter { case (uri, elms) => !elms.isEmpty }
+
+    expect(Map()) {
+      offendingElmDecls
+    }
+  }
+
   test("Only known substitution group names") {
     val substitutionGroups: Map[URI, Set[EName]] = taxonomy.schemas mapValues { doc =>
       val elementDecls = doc.elementDeclarationsWithPaths.map(_._2)
@@ -227,6 +257,32 @@ class NlTaxonomieTest extends FunSuite with BeforeAndAfterAll with TaxonomyParse
 
     expect(expectedGroupNames) {
       substitutionGroups.map(_.name)
+    }
+
+    val domainItemSubstGroup = {
+      val result = substitutionGroups find { grp => grp.name == EName("{http://www.nltaxonomie.nl/6.0/basis/sbr/xbrl/xbrl-syntax-extension}domainItem") }
+      result.get
+    }
+
+    expect(Some(SubstitutionGroup.Item)) {
+      domainItemSubstGroup.parentGroupOption
+    }
+
+    expect(None) {
+      SubstitutionGroup.Item.parentGroupOption
+    }
+
+    val specificationTupleSubstGroup = {
+      val result = substitutionGroups find { grp => grp.name == EName("{http://www.nltaxonomie.nl/6.0/basis/sbr/xbrl/xbrl-syntax-extension}specificationTuple") }
+      result.get
+    }
+
+    expect(Some(SubstitutionGroup.Tuple)) {
+      specificationTupleSubstGroup.parentGroupOption
+    }
+
+    expect(None) {
+      SubstitutionGroup.Tuple.parentGroupOption
     }
   }
 

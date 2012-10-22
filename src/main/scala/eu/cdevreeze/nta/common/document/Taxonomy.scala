@@ -26,6 +26,11 @@ import eu.cdevreeze.yaidom.{ Document, Elem, EName, QName }
  * Taxonomy, using this term loosely as any collection of taxonomy schema documents, taxonomy linkbases, and maybe some other
  * taxonomy documents.
  *
+ * If the taxonomy is to be useful in that it knows its item and tuple concepts, it is important that the passed
+ * "added substitution groups" (added means: not already a "well-known" substitution group, such as xbrli:item, xbrli:tuple)
+ * are complete. One way to achieve that is calling method `withFoundSubstitutionGroups`, and using the resulting Taxonomy
+ * instead of this one.
+ *
  * @author Chris de Vreeze
  */
 final class Taxonomy(
@@ -56,6 +61,10 @@ final class Taxonomy(
     otherDocuments = this.otherDocuments ++ other.otherDocuments,
     addedSubstitutionGroups = this.addedSubstitutionGroups ++ other.addedSubstitutionGroups)
 
+  /**
+   * Returns a copy of this Taxonomy in which the substitution groups are the ones passed as parameter
+   * (besides the well-known ones, of course).
+   */
   def withAddedSubstitutionGroups(newAddedSubstitutionGroups: Set[SubstitutionGroup]) = new Taxonomy(
     schemas = schemas.toMap,
     linkbases = linkbases.toMap,
@@ -63,12 +72,19 @@ final class Taxonomy(
     addedSubstitutionGroups = newAddedSubstitutionGroups)
 
   /**
+   * Returns a copy of this Taxonomy in which the substitution groups are the ones found in this taxonomy
+   * (of course including the well-known ones). Calling this method makes the result Taxonomy useful, because
+   * it knows its item and tuple concepts. Note that this is a very expensive method, not to be called repeatedly.
+   */
+  def withFoundSubstitutionGroups: Taxonomy = withAddedSubstitutionGroups(findSubstitutionGroups)
+
+  /**
    * Very expensive method to find all substitution group names used. Calling this method helps in identifying the
    * added substitution groups (by the taxonomy). Then an adapted copy of the taxonomy can be made, by calling method
    * `withAddedSubstitutionGroups`. The result would be a useful taxonomy that knows its items and tuples.
    */
   def findSubstitutionGroupNames: Set[EName] = {
-    val rawSubstitutionGroupNamesPerSchema: Map[URI, Set[EName]] = schemas mapValues { doc =>
+    val substitutionGroupNamesPerSchema: Map[URI, Set[EName]] = schemas mapValues { doc =>
       val tns = doc.targetNamespaceOption.getOrElse(sys.error("Expected TNS. URI: %s".format(doc.localUri)))
 
       val elementDecls = doc.topLevelElementDeclarations
@@ -85,8 +101,8 @@ final class Taxonomy(
       substitutionGroups.toSet
     }
 
-    val rawSubstitutionGroupNames: Set[EName] = rawSubstitutionGroupNamesPerSchema.values.toSet.flatten
-    rawSubstitutionGroupNames
+    val substitutionGroupNames: Set[EName] = substitutionGroupNamesPerSchema.values.toSet.flatten
+    substitutionGroupNames
   }
 
   /**
@@ -95,6 +111,15 @@ final class Taxonomy(
    * `withAddedSubstitutionGroups`. The result would be a useful taxonomy that knows its items and tuples.
    */
   def findSubstitutionGroups: Set[SubstitutionGroup] = {
+    val substGroupElmDecls = findSubstitutionGroupElementDeclarations
+    findSubstitutionGroups(substGroupElmDecls, SubstitutionGroup.wellKnownSubstitutionGroups)
+  }
+
+  /**
+   * Very expensive method to find all element declarations of substitution groups used. Used by method
+   * `findSubstitutionGroups`, but possibly sometimes also useful in application code.
+   */
+  def findSubstitutionGroupElementDeclarations: Map[URI, immutable.Seq[Elem]] = {
     val substGroupNames: Set[EName] = findSubstitutionGroupNames
 
     val substGroupElmDecls: Map[URI, immutable.Seq[Elem]] = schemas mapValues { doc: SchemaDocument =>
@@ -108,7 +133,7 @@ final class Taxonomy(
       }
     } filter { case (uri, elms) => !elms.isEmpty }
 
-    findSubstitutionGroups(substGroupElmDecls, SubstitutionGroup.wellKnownSubstitutionGroups)
+    substGroupElmDecls
   }
 
   private def findSubstitutionGroups(

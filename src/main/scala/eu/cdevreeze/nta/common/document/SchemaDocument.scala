@@ -65,6 +65,39 @@ final class SchemaDocument(
     doc.documentElement filterChildElems { e => e.resolvedName == EName(NS, "element") }
   }
 
+  /**
+   * Returns the likely concept declarations, which are the (top level) element declarations that
+   * have a name, substitutionGroup and type. To qualify as concept declarations, the substitutionGroup
+   * must be xbrli:item or xbrli:tuple, or have these substitution groups in their ancestry.
+   *
+   * Only top-level element declarations are returned, as per NTA rule 2.2.2.01.
+   */
+  def probableConceptDeclarations: immutable.IndexedSeq[Elem] = {
+    topLevelElementDeclarations filter { e =>
+      e.attributeOption(EName("name")).isDefined &&
+        e.attributeOption(EName("substitutionGroup")).isDefined &&
+        e.attributeOption(EName("type")).isDefined
+    }
+  }
+
+  /**
+   * Returns the likely concept declarations that are not themselves substitution group declarations in the given
+   * parameter set of substitution groups.
+   */
+  def conceptDeclarations(substitutionGroups: Set[SubstitutionGroup]): immutable.IndexedSeq[Elem] = {
+    require(SubstitutionGroup.wellKnownSubstitutionGroups.subsetOf(substitutionGroups),
+      "Some missing well-known substitution groups")
+
+    val substitutionGroupNames = substitutionGroups map { _.name }
+
+    val likelyConceptDecls = probableConceptDeclarations
+
+    likelyConceptDecls filter { e =>
+      val ename = EName(targetNamespaceOption, e.attribute(EName("name")))
+      !substitutionGroupNames.contains(ename)
+    }
+  }
+
   def elementDeclarationPaths: immutable.IndexedSeq[ElemPath] = {
     doc.documentElement filterElemPaths { e => e.resolvedName == EName(NS, "element") }
   }
@@ -82,6 +115,20 @@ final class SchemaDocument(
 
   def topLevelElementDeclarationsByUris: Map[URI, Elem] = {
     val result = topLevelElementDeclarations flatMap { e =>
+      uriOption(e) map { uri => (uri -> e) }
+    }
+    result.toMap
+  }
+
+  def probableConceptDeclarationsByUris: Map[URI, Elem] = {
+    val result = probableConceptDeclarations flatMap { e =>
+      uriOption(e) map { uri => (uri -> e) }
+    }
+    result.toMap
+  }
+
+  def conceptDeclarationsByUris(substitutionGroups: Set[SubstitutionGroup]): Map[URI, Elem] = {
+    val result = conceptDeclarations(substitutionGroups) flatMap { e =>
       uriOption(e) map { uri => (uri -> e) }
     }
     result.toMap

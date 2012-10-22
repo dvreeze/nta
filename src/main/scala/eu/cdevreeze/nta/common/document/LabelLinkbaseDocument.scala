@@ -36,18 +36,19 @@ final class LabelLinkbaseDocument(
 
   /**
    * Returns label resource XLinks per concept URI (pointing to an ID within a schema document), given an extended link (which
-   * contains the necessary arcs, locators to concepts, and the searched for label resource links).
+   * contains the necessary arcs, locators to concepts, and the searched for label resource links). The given arcrole and
+   * (label resource) role are used to filter the results.
    *
    * The resulting Map can be matched with the resulting Map from a call to `SchemaDocument.topLevelElementDeclarationsByUris`,
    * thus relating concepts to labels.
    *
    * This is an expensive method, so it should certainly not be called many times in succession.
    */
-  def conceptLabelsByConceptUris(extendedLink: xlink.ExtendedLink): Map[URI, xlink.Resource] = {
+  def conceptLabelsByConceptUris(extendedLink: xlink.ExtendedLink, arcRole: String, role: String): Map[URI, xlink.Resource] = {
     val labelsToXLinks: Map[String, xlink.XLink] = labelToXLinkMap(extendedLink)
     val locatorLabelsToLocalUris: Map[String, URI] = locatorLabelToLocalUriMap(extendedLink)
 
-    val arcs = extendedLink.arcXLinks filter { arc => arc.arcroleOption == Some("http://www.xbrl.org/2003/arcrole/concept-label") }
+    val arcs = extendedLink.arcXLinks filter { arc => arc.arcroleOption == Some(arcRole) }
 
     val arcFromToTuples: Seq[(xlink.Arc, xlink.Locator, xlink.Resource)] = arcs map { arc: xlink.Arc =>
       require(arc.fromOption.isDefined, "Expected 'from' in arc")
@@ -72,6 +73,13 @@ final class LabelLinkbaseDocument(
           sys.error("Could not find locator with label '%s'".format(fromLoc.labelOption)))
         (uri -> toRes)
     }
-    result.toMap
+    result.toMap filter { case (uri, res) => res.roleOption == Some(role) }
+  }
+
+  def standardConceptLabelsByConceptUris(extendedLink: xlink.ExtendedLink): Map[URI, xlink.Resource] = {
+    conceptLabelsByConceptUris(
+      extendedLink,
+      "http://www.xbrl.org/2003/arcrole/concept-label",
+      "http://www.xbrl.org/2003/role/label")
   }
 }
