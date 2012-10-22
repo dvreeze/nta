@@ -28,6 +28,11 @@ import SchemaDocument._
  *
  * Note that an XML Schema can be comprised of several schema documents. Each instance of this class holds only one such document.
  *
+ * TODO Consider introducing a class for element declarations, which keeps the "identity" (and TNS) of the Schema document, and the
+ * ElemPath within that document. Also consider making a parent class for "schema data", which mixes in traits like
+ * yaidom's ElemLike. Note that an element declaration typically needs the following context to be useful: URI of the containing
+ * schema document, target namespace, and "path" from root to the element declaration.
+ *
  * @author Chris de Vreeze
  */
 final class SchemaDocument(

@@ -109,14 +109,19 @@ class LabelLinkbaseTest extends FunSuite with BeforeAndAfterAll with TaxonomyPar
       companyElemDeclOption flatMap { _.attributeOption(EName("name")) }
     }
 
-    val companyLabelOption: Option[String] = {
+    val companyLabelOption: Option[xlink.Resource] = {
       val resources = matchingLabelUris.filterKeys(companyConceptUris) map { _._2 }
-      val labelTexts = resources map { res => res.wrappedElem.text }
-      labelTexts.headOption
+      resources.headOption
+    }
+    val companyLabelLangOption = companyLabelOption flatMap { _.wrappedElem \@ "lang" }
+    val companyLabelTextOption = companyLabelOption map { _.wrappedElem.text }
+
+    expect(Some("nl")) {
+      companyLabelLangOption
     }
 
     expect(Some("Bedrijf")) {
-      companyLabelOption
+      companyLabelTextOption
     }
 
     // Check label 'Huidig jaar' for concept 'Current'
@@ -138,14 +143,19 @@ class LabelLinkbaseTest extends FunSuite with BeforeAndAfterAll with TaxonomyPar
       currentElemDeclOption flatMap { _.attributeOption(EName("name")) }
     }
 
-    val currentLabelOption: Option[String] = {
+    val currentLabelOption: Option[xlink.Resource] = {
       val resources = matchingLabelUris.filterKeys(currentConceptUris) map { _._2 }
-      val labelTexts = resources map { res => res.wrappedElem.text }
-      labelTexts.headOption
+      resources.headOption
+    }
+    val currentLabelLangOption = currentLabelOption flatMap { _.wrappedElem \@ "lang" }
+    val currentLabelTextOption = currentLabelOption map { _.wrappedElem.text }
+
+    expect(Some("nl")) {
+      currentLabelLangOption
     }
 
     expect(Some("Huidig jaar")) {
-      currentLabelOption
+      currentLabelTextOption
     }
   }
 }

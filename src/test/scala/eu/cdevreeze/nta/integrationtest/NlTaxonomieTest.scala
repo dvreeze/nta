@@ -156,7 +156,7 @@ class NlTaxonomieTest extends FunSuite with BeforeAndAfterAll with TaxonomyParse
     }
   }
 
-  test("Only known substitution groups") {
+  test("Only known substitution group names") {
     val substitutionGroups: Map[URI, Set[EName]] = taxonomy.schemas mapValues { doc =>
       val elementDecls = doc.elementDeclarationsWithPaths.map(_._2)
       val substitutionGroups = elementDecls flatMap { e =>
@@ -188,7 +188,7 @@ class NlTaxonomieTest extends FunSuite with BeforeAndAfterAll with TaxonomyParse
     }
   }
 
-  test("Only known substitution groups found by taxonomy itself") {
+  test("Only known substitution group names found by taxonomy itself") {
     val substitutionGroups: Set[EName] = taxonomy.findSubstitutionGroupNames
 
     val expectedGroupNames: Set[EName] = Set(
@@ -206,6 +206,27 @@ class NlTaxonomieTest extends FunSuite with BeforeAndAfterAll with TaxonomyParse
 
     expect(expectedGroupNames) {
       substitutionGroups
+    }
+  }
+
+  test("Only known substitution groups found by taxonomy itself") {
+    val substitutionGroups: Set[SubstitutionGroup] = taxonomy.findSubstitutionGroups
+
+    // This time not finding {http://www.xbrl.org/2003/XLink}resource
+    val expectedGroupNames: Set[EName] = Set(
+      EName("{http://www.xbrl.org/2003/instance}item"),
+      EName("{http://www.xbrl.org/2003/instance}tuple"),
+      EName("{http://xbrl.org/2005/xbrldt}hypercubeItem"),
+      EName("{http://xbrl.org/2005/xbrldt}dimensionItem"),
+      EName("{http://www.nltaxonomie.nl/6.0/basis/sbr/xbrl/xbrl-syntax-extension}domainItem"),
+      EName("{http://www.nltaxonomie.nl/6.0/basis/sbr/xbrl/xbrl-syntax-extension}domainMemberItem"),
+      EName("{http://www.nltaxonomie.nl/6.0/basis/sbr/xbrl/xbrl-syntax-extension}presentationItem"),
+      EName("{http://www.nltaxonomie.nl/6.0/basis/sbr/xbrl/xbrl-syntax-extension}presentationTuple"),
+      EName("{http://www.nltaxonomie.nl/6.0/basis/sbr/xbrl/xbrl-syntax-extension}specificationTuple"),
+      EName("{http://www.nltaxonomie.nl/6.0/basis/sbr/xbrl/xbrl-syntax-extension}primaryDomainItem"))
+
+    expect(expectedGroupNames) {
+      substitutionGroups.map(_.name)
     }
   }
 

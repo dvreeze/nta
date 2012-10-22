@@ -88,6 +88,80 @@ final class Taxonomy(
     val rawSubstitutionGroupNames: Set[EName] = rawSubstitutionGroupNamesPerSchema.values.toSet.flatten
     rawSubstitutionGroupNames
   }
+
+  /**
+   * Very expensive method to find all substitution groups used. Calling this method helps in identifying the
+   * added substitution groups (by the taxonomy). Then an adapted copy of the taxonomy can be made, by calling method
+   * `withAddedSubstitutionGroups`. The result would be a useful taxonomy that knows its items and tuples.
+   */
+  def findSubstitutionGroups: Set[SubstitutionGroup] = {
+    val substGroupNames: Set[EName] = findSubstitutionGroupNames
+
+    val substGroupElmDecls: Map[URI, immutable.Seq[Elem]] = schemas mapValues { doc: SchemaDocument =>
+      val tns = doc.targetNamespaceOption.getOrElse(sys.error("Expected TNS. URI: %s".format(doc.localUri)))
+
+      doc.topLevelElementDeclarations filter { e =>
+        val localName = e.attribute(EName("name"))
+        val ename = EName(tns, localName)
+
+        substGroupNames.contains(ename)
+      }
+    } filter { case (uri, elms) => !elms.isEmpty }
+
+    findSubstitutionGroups(substGroupElmDecls, SubstitutionGroup.wellKnownSubstitutionGroups)
+  }
+
+  private def findSubstitutionGroups(
+    substGroupElmDecls: Map[URI, immutable.Seq[Elem]],
+    foundGroups: Set[SubstitutionGroup]): Set[SubstitutionGroup] = {
+
+    val matchingSubstGroupElmDecls = substGroupElmDecls map {
+      case (uri, elms) =>
+        val doc = schemas(uri)
+        val tns = doc.targetNamespaceOption.getOrElse(sys.error("Expected TNS. URI: %s".format(doc.localUri)))
+
+        val resultElmDecls = elms filter { e =>
+          val substGroup = e.attribute(EName("substitutionGroup"))
+          val substGroupEName = e.scope.resolveQName(QName(substGroup)).getOrElse(sys.error("Could not resolve %s".format(substGroup)))
+          foundGroups.map(_.name).contains(substGroupEName)
+        }
+        (uri -> resultElmDecls)
+    }
+
+    if (matchingSubstGroupElmDecls.values.flatten.isEmpty) foundGroups
+    else {
+      val newGroups: Set[SubstitutionGroup] = {
+        val result = matchingSubstGroupElmDecls.toSeq flatMap {
+          case (uri, elms) =>
+            val doc = schemas(uri)
+            val tns = doc.targetNamespaceOption.getOrElse(sys.error("Expected TNS. URI: %s".format(doc.localUri)))
+
+            val result = elms map { e =>
+              val parentSubstGroupQName = QName(e.attribute(EName("substitutionGroup")))
+              val parentSubstGroupEName = e.scope.resolveQName(parentSubstGroupQName).getOrElse(sys.error("Could not resolve %s".format(parentSubstGroupQName)))
+              val parentSubstGroupOption = foundGroups.find(_.name == parentSubstGroupEName)
+              assert(parentSubstGroupOption.isDefined)
+              val parentSubstGroup = parentSubstGroupOption.get
+
+              val ename = EName(tns, e.attribute(EName("name")))
+
+              ename :: parentSubstGroup
+            }
+            result.toSet
+        }
+        result.toSet
+      }
+
+      val remainingSubstGroupElmDecls: Map[URI, immutable.Seq[Elem]] = substGroupElmDecls map {
+        case (uri, elms) =>
+          val filteredElms = elms filter { e => !matchingSubstGroupElmDecls(uri).contains(e) }
+          (uri -> filteredElms)
+      }
+
+      // Recursive call
+      findSubstitutionGroups(remainingSubstGroupElmDecls, foundGroups ++ newGroups)
+    }
+  }
 }
 
 object Taxonomy {
