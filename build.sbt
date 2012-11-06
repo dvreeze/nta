@@ -21,7 +21,7 @@ scalacOptions <++= scalaBinaryVersion map { version =>
   if (version.contains("2.10")) Seq("-feature") else Seq()
 }
 
-libraryDependencies += "eu.cdevreeze.yaidom" %% "yaidom" % "0.6.2"
+libraryDependencies += "eu.cdevreeze.yaidom" %% "yaidom" % "0.6.3"
 
 libraryDependencies += "junit" % "junit" % "4.10" % "test"
 
