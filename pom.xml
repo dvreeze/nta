@@ -3,12 +3,12 @@
 	<modelVersion>4.0.0</modelVersion>
 
 	<properties>
-		<scala.version>2.9.1</scala.version>
+		<scala.version>2.9.2</scala.version>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 	</properties>
 
 	<groupId>eu.cdevreeze.nta</groupId>
-	<artifactId>nta_2.9.1</artifactId>
+	<artifactId>nta_2.9.2</artifactId>
 	<version>0.1-SNAPSHOT</version>
 	<packaging>jar</packaging>
 
@@ -151,8 +151,8 @@
 
 		<dependency>
 			<groupId>eu.cdevreeze.yaidom</groupId>
-			<artifactId>yaidom_2.9.1</artifactId>
-			<version>0.6.4</version>
+			<artifactId>yaidom_2.9.2</artifactId>
+			<version>0.6.6</version>
 		</dependency>
 
 		<dependency>

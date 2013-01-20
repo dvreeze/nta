@@ -94,7 +94,7 @@ final class Taxonomy(
 
         if (attrOption.isEmpty) None
         else {
-          val name = e.scope.resolveQName(QName(attrOption.get)).getOrElse(sys.error("Could not resolve %s".format(attrOption.get)))
+          val name = e.scope.resolveQNameOption(QName(attrOption.get)).getOrElse(sys.error("Could not resolve %s".format(attrOption.get)))
           Some(name)
         }
       }
@@ -147,7 +147,7 @@ final class Taxonomy(
 
         val resultElmDecls = elms filter { e =>
           val substGroup = e.attribute(EName("substitutionGroup"))
-          val substGroupEName = e.scope.resolveQName(QName(substGroup)).getOrElse(sys.error("Could not resolve %s".format(substGroup)))
+          val substGroupEName = e.scope.resolveQNameOption(QName(substGroup)).getOrElse(sys.error("Could not resolve %s".format(substGroup)))
           foundGroups.map(_.name).contains(substGroupEName)
         }
         (uri -> resultElmDecls)
@@ -163,7 +163,7 @@ final class Taxonomy(
 
             val result = elms map { e =>
               val parentSubstGroupQName = QName(e.attribute(EName("substitutionGroup")))
-              val parentSubstGroupEName = e.scope.resolveQName(parentSubstGroupQName).getOrElse(sys.error("Could not resolve %s".format(parentSubstGroupQName)))
+              val parentSubstGroupEName = e.scope.resolveQNameOption(parentSubstGroupQName).getOrElse(sys.error("Could not resolve %s".format(parentSubstGroupQName)))
               val parentSubstGroupOption = foundGroups.find(_.name == parentSubstGroupEName)
               assert(parentSubstGroupOption.isDefined)
               val parentSubstGroup = parentSubstGroupOption.get
@@ -190,6 +190,8 @@ final class Taxonomy(
 }
 
 object Taxonomy {
+
+  val Empty = apply(Vector())
 
   def apply(docs: immutable.Seq[TaxonomyDocument]): Taxonomy = {
     val schemas = docs collect { case doc: SchemaDocument => (doc.localUri -> doc) }

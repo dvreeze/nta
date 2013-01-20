@@ -191,7 +191,7 @@ class NlTaxonomieTest extends FunSuite with BeforeAndAfterAll with TaxonomyParse
       val elementDecls = doc.elementDeclarationsWithPaths.map(_._2)
       val substitutionGroups = elementDecls flatMap { e =>
         val attrOption = e.attributeOption(EName("substitutionGroup"))
-        attrOption flatMap { a => e.scope.resolveQName(QName(a)) }
+        attrOption flatMap { a => e.scope.resolveQNameOption(QName(a)) }
       }
       substitutionGroups.toSet
     }
@@ -304,7 +304,7 @@ class NlTaxonomieTest extends FunSuite with BeforeAndAfterAll with TaxonomyParse
 
     def substitutionGroupOption(e: Elem): Option[EName] = {
       val attrValue = e.attributeOption(EName("substitutionGroup"))
-      attrValue flatMap { a => e.scope.resolveQName(QName(a)) }
+      attrValue flatMap { a => e.scope.resolveQNameOption(QName(a)) }
     }
 
     val searchedItemOrTupleSubstitutionGroupDecls = extensionDoc.topLevelElementDeclarations filter { e =>

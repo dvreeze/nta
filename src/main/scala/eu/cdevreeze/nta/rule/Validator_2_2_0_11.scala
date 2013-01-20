@@ -52,7 +52,7 @@ final class Validator_2_2_0_11 extends Validator[SchemaDocument, Taxonomy] {
     val usedNamespaceUris: Set[String] = introducedNamespaceUris filter { ns =>
       val matchingElmOption = elm findElemOrSelf { e =>
         e.resolvedName.namespaceUriOption == Some(ns) ||
-          e.resolvedAttributes.map(_._1).flatMap(_.namespaceUriOption).contains(ns)
+          e.resolvedAttributes.toMap.keySet.flatMap(_.namespaceUriOption).contains(ns)
       }
       matchingElmOption.isDefined
     }

@@ -11,9 +11,9 @@ organization := "eu.cdevreeze.nta"
 
 version := "0.1-SNAPSHOT"
 
-scalaVersion := "2.9.1"
+scalaVersion := "2.9.2"
 
-crossScalaVersions := Seq("2.9.2", "2.9.1", "2.9.0-1", "2.9.0", "2.10.0-RC1")
+crossScalaVersions := Seq("2.9.2", "2.9.1", "2.9.0-1", "2.9.0", "2.10.0")
 
 scalacOptions ++= Seq("-unchecked", "-deprecation")
 
@@ -21,13 +21,13 @@ scalacOptions <++= scalaBinaryVersion map { version =>
   if (version.contains("2.10")) Seq("-feature") else Seq()
 }
 
-libraryDependencies += "eu.cdevreeze.yaidom" %% "yaidom" % "0.6.3"
+libraryDependencies += "eu.cdevreeze.yaidom" %% "yaidom" % "0.6.6"
 
 libraryDependencies += "junit" % "junit" % "4.10" % "test"
 
 libraryDependencies <+= scalaBinaryVersion { version =>
   if (version.contains("2.10"))
-    "org.scalatest" % "scalatest_2.10.0-RC1" % "1.8-2.10.0-RC1-B1" % "test"
+    "org.scalatest" % "scalatest_2.10.0" % "1.8" % "test"
   else
     "org.scalatest" %% "scalatest" % "1.8" % "test"
 }
