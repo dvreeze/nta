@@ -1,5 +1,5 @@
 /*
- * Copyright 2011 Chris de Vreeze
+ * Copyright 2011-2017 Chris de Vreeze
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,26 +14,19 @@
  * limitations under the License.
  */
 
-package eu.cdevreeze.nta
-package common
-package validate
+package eu.cdevreeze.nta.validator
 
-import scala.collection.immutable
+import org.scalactic.Every
+import org.scalactic.Or
+
+import eu.cdevreeze.nta.taxo.SubTaxonomy
 
 /**
- * Result of a rule validation.
+ * Validator of a SubTaxonomy for a given rule.
  *
  * @author Chris de Vreeze
  */
-final class ValidationResult[A](
-  val validated: A,
-  val isValid: Boolean,
-  val messages: immutable.IndexedSeq[String]) extends Immutable {
+trait SubTaxonomyValidator {
 
-  require(messages ne null)
-}
-
-object ValidationResult {
-
-  def validResult[A](validated: A): ValidationResult[A] = new ValidationResult[A](validated, true, Vector())
+  def validate(subTaxonomy: SubTaxonomy): Unit Or Every[ValidationErrorOrWarning]
 }

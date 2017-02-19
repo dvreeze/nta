@@ -1,5 +1,5 @@
 /*
- * Copyright 2011 Chris de Vreeze
+ * Copyright 2011-2017 Chris de Vreeze
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,18 +14,24 @@
  * limitations under the License.
  */
 
-package eu.cdevreeze.nta
-package common
-package validate
-
-import scala.collection.immutable
+package eu.cdevreeze.nta.validator
 
 /**
- * Generic validator.
+ * Validation error or warning.
  *
  * @author Chris de Vreeze
  */
-trait Validator[A, B] {
+sealed trait ValidationErrorOrWarning {
 
-  def validate(x: A)(context: B): ValidationResult[A]
+  def ruleName: String
+
+  def message: String
 }
+
+final case class ValidationError(
+  val ruleName: String,
+  val message: String) extends ValidationErrorOrWarning
+
+final case class ValidationWarning(
+  val ruleName: String,
+  val message: String) extends ValidationErrorOrWarning

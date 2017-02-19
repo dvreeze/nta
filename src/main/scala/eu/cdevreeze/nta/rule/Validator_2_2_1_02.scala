@@ -1,5 +1,5 @@
 /*
- * Copyright 2011 Chris de Vreeze
+ * Copyright 2011-2017 Chris de Vreeze
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,49 +14,64 @@
  * limitations under the License.
  */
 
-package eu.cdevreeze.nta
-package rule
+package eu.cdevreeze.nta.rule
 
-import java.net.URI
-import scala.collection.immutable
-import eu.cdevreeze.yaidom._
-import common.document.{ SchemaDocument, Taxonomy, LabelLinkbaseDocument, SubstitutionGroup }
-import common.validate.{ Validator, ValidationResult }
+import scala.reflect.classTag
+
+import org.scalactic.Accumulation.convertGenTraversableOnceToCombinable
+import org.scalactic.Bad
+import org.scalactic.Every
+import org.scalactic.Good
+import org.scalactic.One
+import org.scalactic.Or
+
+import eu.cdevreeze.nta.taxo.SubTaxonomy
+import eu.cdevreeze.nta.validator.SubTaxonomyValidator
+import eu.cdevreeze.nta.validator.ValidationError
+import eu.cdevreeze.nta.validator.ValidationErrorOrWarning
+import eu.cdevreeze.tqa.dom.ConceptDeclaration
+import eu.cdevreeze.tqa.dom.LabelLink
+import eu.cdevreeze.tqa.dom.LinkbaseRef
+import eu.cdevreeze.tqa.dom.XsdSchema
+import eu.cdevreeze.tqa.taxonomy.BasicTaxonomy
 
 /**
  * Validator of rule 2.2.1.02. The rule says that each schema defining concepts must link to a label linkbase.
  *
  * @author Chris de Vreeze
  */
-final class Validator_2_2_1_02 extends Validator[SchemaDocument, Taxonomy] {
+final class Validator_2_2_1_02 extends SubTaxonomyValidator {
 
-  def validate(doc: SchemaDocument)(context: Taxonomy): ValidationResult[SchemaDocument] = {
-    // Assuming a "useful" taxonomy, with all needed substitution groups
-    val hasConcepts = definesConcepts(doc, context.substitutionGroups)
+  def validate(subTaxonomy: SubTaxonomy): Unit Or Every[ValidationErrorOrWarning] = {
+    val xsdSchemas = subTaxonomy.asBasicTaxonomy.findAllXsdSchemas
 
-    val labelsFoundIfApplicable =
-      if (!hasConcepts) true
-      else {
-        val linkbaseRefs = doc.doc.documentElement.filterElemsOrSelf(EName("{http://www.xbrl.org/2003/linkbase}linkbaseRef"))
-
-        val labelLinkbaseRefs = linkbaseRefs filter { e =>
-          val simpleXLink = xlink.SimpleLink(e)
-          val href = simpleXLink.hrefOption.getOrElse(sys.error("Missing href in simple link: %s".format(e)))
-          val absoluteUri = doc.localUri.resolve(href)
-
-          val linkbaseOption = context.linkbases.get(absoluteUri)
-          linkbaseOption.isDefined && linkbaseOption.get.isInstanceOf[LabelLinkbaseDocument]
-        }
-        !labelLinkbaseRefs.isEmpty
-      }
-
-    if (labelsFoundIfApplicable) ValidationResult.validResult(doc)
-    else {
-      new ValidationResult(doc, false, Vector("There are no label linkbase refs in the schema document"))
-    }
+    xsdSchemas.map(xsd => validate(xsd, subTaxonomy.backingTaxonomy)).combined.map(good => ())
   }
 
-  private def definesConcepts(doc: SchemaDocument, conceptSubstGroups: Set[SubstitutionGroup]): Boolean = {
-    !doc.conceptDeclarations(conceptSubstGroups).isEmpty
+  private def validate(xsdRootElem: XsdSchema, backingTaxonomy: BasicTaxonomy): Unit Or Every[ValidationErrorOrWarning] = {
+    val conceptDeclBuilder = new ConceptDeclaration.Builder(backingTaxonomy.substitutionGroupMap)
+    val conceptDecls = xsdRootElem.findAllGlobalElementDeclarations.flatMap(e => conceptDeclBuilder.optConceptDeclaration(e))
+
+    val hasConceptDecl: Boolean = conceptDecls.size >= 1
+
+    val hasLinkToLabelLinkbase: Boolean = {
+      val linkbaseRefs = xsdRootElem.findAllElemsOfType(classTag[LinkbaseRef])
+
+      linkbaseRefs exists { linkbaseRef =>
+        val linkbaseUri = linkbaseRef.baseUri.resolve(linkbaseRef.rawHref)
+
+        backingTaxonomy.taxonomyBase.rootElemUriMap.get(linkbaseUri) exists { linkbase =>
+          linkbase.findElemOfType(classTag[LabelLink])(_ => true).isDefined
+        }
+      }
+    }
+
+    if (hasLinkToLabelLinkbase || !hasConceptDecl) {
+      Good(())
+    } else {
+      assert(hasConceptDecl && !hasLinkToLabelLinkbase)
+
+      Bad(One(ValidationError("2.2.1.02", s"There are no label linkbase refs in the schema document ${xsdRootElem.docUri}, in spite of it having at least one concept declaration")))
+    }
   }
 }

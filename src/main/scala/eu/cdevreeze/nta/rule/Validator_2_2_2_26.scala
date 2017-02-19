@@ -1,5 +1,5 @@
 /*
- * Copyright 2011 Chris de Vreeze
+ * Copyright 2011-2017 Chris de Vreeze
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,67 +14,59 @@
  * limitations under the License.
  */
 
-package eu.cdevreeze.nta
-package rule
+package eu.cdevreeze.nta.rule
 
-import java.net.URI
-import scala.collection.immutable
-import eu.cdevreeze.yaidom._
-import common.document.{ SchemaDocument, Taxonomy, LabelLinkbaseDocument, SubstitutionGroup }
-import common.validate.{ Validator, ValidationResult }
+import scala.reflect.classTag
+
+import org.scalactic.Accumulation.convertGenTraversableOnceToCombinable
+import org.scalactic.Bad
+import org.scalactic.Every
+import org.scalactic.Good
+import org.scalactic.Or
+
+import eu.cdevreeze.nta.taxo.SubTaxonomy
+import eu.cdevreeze.nta.validator.SubTaxonomyValidator
+import eu.cdevreeze.nta.validator.ValidationError
+import eu.cdevreeze.nta.validator.ValidationErrorOrWarning
+import eu.cdevreeze.tqa.dom.ConceptDeclaration
+import eu.cdevreeze.tqa.dom.XsdSchema
+import eu.cdevreeze.tqa.relationship.ConceptLabelRelationship
+import eu.cdevreeze.tqa.taxonomy.BasicTaxonomy
+import eu.cdevreeze.yaidom.core.EName
 
 /**
  * Validator of rule 2.2.2.26. All concepts must have a standard label in the local language (NL).
  *
  * @author Chris de Vreeze
  */
-final class Validator_2_2_2_26 extends Validator[SchemaDocument, Taxonomy] {
+final class Validator_2_2_2_26 extends SubTaxonomyValidator {
 
-  def validate(doc: SchemaDocument)(context: Taxonomy): ValidationResult[SchemaDocument] = {
-    val conceptUris: Set[URI] = doc.conceptDeclarationsByUris(context.substitutionGroups).keySet
+  private val languageCode = "nl"
+  private val defaultResourceRole = "http://www.xbrl.org/2003/role/label"
 
-    var warnings = List[String]()
+  def validate(subTaxonomy: SubTaxonomy): Unit Or Every[ValidationErrorOrWarning] = {
+    val xsdSchemas = subTaxonomy.asBasicTaxonomy.findAllXsdSchemas
 
-    val labelLinkbases: immutable.Seq[LabelLinkbaseDocument] = {
-      val linkbaseRefs = doc.doc.documentElement.filterElemsOrSelf(EName("{http://www.xbrl.org/2003/linkbase}linkbaseRef"))
+    xsdSchemas.map(xsd => validate(xsd, subTaxonomy.backingTaxonomy)).combined.map(good => ())
+  }
 
-      val linkbases = linkbaseRefs flatMap { e =>
-        val simpleXLink = xlink.SimpleLink(e)
-        val href = simpleXLink.hrefOption.getOrElse(sys.error("Missing href in simple link: %s".format(e)))
-        val absoluteUri = doc.localUri.resolve(href)
+  private def validate(xsdRootElem: XsdSchema, backingTaxonomy: BasicTaxonomy): Unit Or Every[ValidationErrorOrWarning] = {
+    val conceptDeclBuilder = new ConceptDeclaration.Builder(backingTaxonomy.substitutionGroupMap)
+    val conceptDecls = xsdRootElem.findAllGlobalElementDeclarations.flatMap(e => conceptDeclBuilder.optConceptDeclaration(e))
 
-        val linkbaseOption = context.linkbases.get(absoluteUri)
-        if (!linkbaseOption.isDefined)
-          warnings = "Href to linkbase not resolved: '%s' (local URI: %s)".format(href, doc.localUri.toString) :: warnings
-        linkbaseOption
+    val offendingConcepts: Set[EName] = conceptDecls.map(_.targetEName).toSet filter { conceptEName =>
+      val conceptLabels = backingTaxonomy.filterOutgoingStandardRelationshipsOfType(conceptEName, classTag[ConceptLabelRelationship]) { rel =>
+        (rel.language == languageCode) && (rel.resourceRole == defaultResourceRole)
       }
 
-      linkbases collect { case linkbase: LabelLinkbaseDocument => linkbase }
+      conceptLabels.isEmpty
     }
 
-    def findLabelsByUris(doc: LabelLinkbaseDocument): Map[URI, xlink.Resource] = {
-      val extendedLinks = doc.extendedLinks
-
-      val result = extendedLinks.foldLeft(Map[URI, xlink.Resource]()) { (acc, xlink) =>
-        val conceptLabels = doc.standardConceptLabelsByConceptUris(xlink)
-        val filteredConceptLabels = conceptLabels filter {
-          case (uri, res) =>
-            res.wrappedElem.attributeOption(EName("http://www.w3.org/XML/1998/namespace", "lang")) == Some("nl")
-        }
-        acc ++ filteredConceptLabels
-      }
-      result
-    }
-
-    val labelsByUris: Map[URI, xlink.Resource] = labelLinkbases.foldLeft(Map[URI, xlink.Resource]()) { (acc, linkbase) =>
-      acc ++ findLabelsByUris(linkbase)
-    }
-
-    val valid = conceptUris.subsetOf(labelsByUris.keySet)
-
-    if (valid) new ValidationResult(doc, true, warnings.toIndexedSeq)
-    else {
-      new ValidationResult(doc, false, Vector("Some concepts have no standard label in the local language: %s".format(conceptUris.diff(labelsByUris.keySet))))
+    if (offendingConcepts.isEmpty) {
+      Good(())
+    } else {
+      val errors = offendingConcepts.toSeq.map(concept => ValidationError("2.2.2.26", s"Found concept ${concept} without standard label in the local language in document ${xsdRootElem.docUri}"))
+      Bad(Every(errors.head, errors.tail: _*))
     }
   }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2011 Chris de Vreeze
+ * Copyright 2011-2017 Chris de Vreeze
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,37 +14,65 @@
  * limitations under the License.
  */
 
-package eu.cdevreeze.nta
-package rule
+package eu.cdevreeze.nta.rule
 
-import common.document.{ SchemaDocument, Taxonomy }
-import common.validate.{ Validator, ValidationResult }
-import eu.cdevreeze.yaidom._
+import scala.reflect.classTag
+
+import org.scalactic.Accumulation.convertGenTraversableOnceToCombinable
+import org.scalactic.Bad
+import org.scalactic.Every
+import org.scalactic.Good
+import org.scalactic.One
+import org.scalactic.Or
+
+import eu.cdevreeze.nta.taxo.SubTaxonomy
+import eu.cdevreeze.nta.validator.SubTaxonomyValidator
+import eu.cdevreeze.nta.validator.ValidationError
+import eu.cdevreeze.nta.validator.ValidationErrorOrWarning
+import eu.cdevreeze.tqa.dom.Annotation
+import eu.cdevreeze.tqa.dom.Appinfo
+import eu.cdevreeze.tqa.dom.Import
+import eu.cdevreeze.tqa.dom.XsdSchema
+import eu.cdevreeze.tqa.taxonomy.BasicTaxonomy
 
 /**
- * Validator of rule 2.2.0.14. The rule says that in the schema document xs:import elements must have "parent path" //xs:annotation/xs:appinfo.
+ * Validator of rule 2.2.0.14. The rule says that in the schema document xs:import elements must come directly after //xs:annotation/xs:appinfo.
  *
  * @author Chris de Vreeze
  */
-final class Validator_2_2_0_14 extends Validator[SchemaDocument, Taxonomy] {
+final class Validator_2_2_0_14 extends SubTaxonomyValidator {
 
-  def validate(doc: SchemaDocument)(context: Taxonomy): ValidationResult[SchemaDocument] = {
-    val ns = SchemaDocument.NS
+  def validate(subTaxonomy: SubTaxonomy): Unit Or Every[ValidationErrorOrWarning] = {
+    val xsdSchemas = subTaxonomy.asBasicTaxonomy.findAllXsdSchemas
 
-    val matchingElmPaths = doc.doc.documentElement filterElemOrSelfPaths { e => e.resolvedName == EName(ns, "import") }
+    xsdSchemas.map(xsd => validate(xsd, subTaxonomy.backingTaxonomy)).combined.map(good => ())
+  }
 
-    val rejectedElmPaths = matchingElmPaths filter { path =>
-      assert(path.lastEntry.elementName == EName(ns, "import"))
-      assert(path.lastEntry.elementName == doc.doc.documentElement.getWithElemPath(path).resolvedName)
+  private def validate(xsdRootElem: XsdSchema, backingTaxonomy: BasicTaxonomy): Unit Or Every[ValidationErrorOrWarning] = {
+    val childElemsWithIndex = xsdRootElem.findAllChildElems.zipWithIndex
 
-      path.entries.size < 3 ||
-        path.parentPath.lastEntry.elementName != EName(SchemaDocument.NS, "appinfo") ||
-        path.parentPath.parentPath.lastEntry.elementName != EName(SchemaDocument.NS, "annotation")
-    }
+    val idxOfAnnotationOption =
+      childElemsWithIndex collectFirst { case (e: Annotation, idx) if e.findChildElemOfType(classTag[Appinfo])(_ => true).isDefined => idx }
+    val idxesOfImports =
+      childElemsWithIndex collect { case (e: Import, idx) => idx }
 
-    if (rejectedElmPaths.isEmpty) ValidationResult.validResult(doc)
-    else {
-      new ValidationResult(doc, false, Vector("Not all xs:import elements have 'parent path' //xs:annotation/xs:appinfo"))
-    }
+    val minIdxOfImportOption = if (idxesOfImports.isEmpty) None else Some(idxesOfImports.min)
+    val maxIdxOfImportOption = if (idxesOfImports.isEmpty) None else Some(idxesOfImports.max)
+
+    val importsAfterEachOtherResult =
+      if (childElemsWithIndex.collect({ case (e, idx) if idx >= minIdxOfImportOption.getOrElse(-1) && idx <= maxIdxOfImportOption.getOrElse(-1) => e }).forall(_.isInstanceOf[Import])) {
+        Good(())
+      } else {
+        Bad(One(ValidationError("2.2.0.14", s"Not all xs:import elements are directly after each other in document ${xsdRootElem.docUri}")))
+      }
+
+    val importsAfterAnnotationResult =
+      if (idxOfAnnotationOption.forall(idx => minIdxOfImportOption.forall(_ == idx + 1))) {
+        Good(())
+      } else {
+        Bad(One(ValidationError("2.2.0.14", s"The xs:import elements are not directly after //xs:annotation/xs:appinfo in ${xsdRootElem.docUri}")))
+      }
+
+    List(importsAfterEachOtherResult, importsAfterAnnotationResult).combined.map(good => ())
   }
 }

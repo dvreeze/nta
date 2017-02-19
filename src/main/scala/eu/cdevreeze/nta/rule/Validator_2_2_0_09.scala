@@ -1,5 +1,5 @@
 /*
- * Copyright 2011 Chris de Vreeze
+ * Copyright 2011-2017 Chris de Vreeze
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,12 +14,23 @@
  * limitations under the License.
  */
 
-package eu.cdevreeze.nta
-package rule
+package eu.cdevreeze.nta.rule
 
-import common.document.{ SchemaDocument, Taxonomy }
-import common.validate.{ Validator, ValidationResult }
-import eu.cdevreeze.yaidom.EName
+import org.scalactic.Accumulation.convertGenTraversableOnceToCombinable
+import org.scalactic.Bad
+import org.scalactic.Every
+import org.scalactic.Good
+import org.scalactic.One
+import org.scalactic.Or
+
+import eu.cdevreeze.nta.taxo.SubTaxonomy
+import eu.cdevreeze.nta.validator.SubTaxonomyValidator
+import eu.cdevreeze.nta.validator.ValidationError
+import eu.cdevreeze.nta.validator.ValidationErrorOrWarning
+import eu.cdevreeze.tqa.ENames.AttributeFormDefaultEName
+import eu.cdevreeze.tqa.ENames.ElementFormDefaultEName
+import eu.cdevreeze.tqa.dom.XsdSchema
+import eu.cdevreeze.tqa.taxonomy.BasicTaxonomy
 
 /**
  * Validator of rule 2.2.0.09. The rule says that the the schema document must have a @attributeFormDefault attribute
@@ -27,15 +38,29 @@ import eu.cdevreeze.yaidom.EName
  *
  * @author Chris de Vreeze
  */
-final class Validator_2_2_0_09 extends Validator[SchemaDocument, Taxonomy] {
+final class Validator_2_2_0_09 extends SubTaxonomyValidator {
 
-  def validate(doc: SchemaDocument)(context: Taxonomy): ValidationResult[SchemaDocument] = {
-    val attributeFormDefaultOk = doc.doc.documentElement.attributeOption(EName("attributeFormDefault")) == Some("unqualified")
-    val elementFormDefaultOk = doc.doc.documentElement.attributeOption(EName("elementFormDefault")) == Some("qualified")
+  def validate(subTaxonomy: SubTaxonomy): Unit Or Every[ValidationErrorOrWarning] = {
+    val xsdSchemas = subTaxonomy.asBasicTaxonomy.findAllXsdSchemas
 
-    if (attributeFormDefaultOk && elementFormDefaultOk) ValidationResult.validResult(doc)
-    else {
-      new ValidationResult(doc, false, Vector("Missing or incorrect @attributeFormDefault and/or @elementFormDefault"))
-    }
+    xsdSchemas.map(xsd => validate(xsd, subTaxonomy.backingTaxonomy)).combined.map(good => ())
+  }
+
+  private def validate(xsdRootElem: XsdSchema, backingTaxonomy: BasicTaxonomy): Unit Or Every[ValidationErrorOrWarning] = {
+    val attributeFormDefaultResult =
+      if (xsdRootElem.attributeOption(AttributeFormDefaultEName) == Some("unqualified")) {
+        Good(())
+      } else {
+        Bad(One(ValidationError("2.2.2.09", s"Missing or incorrect attributeFormDefault attribute in document ${xsdRootElem.docUri}")))
+      }
+
+    val elementFormDefaultResult =
+      if (xsdRootElem.attributeOption(ElementFormDefaultEName) == Some("qualified")) {
+        Good(())
+      } else {
+        Bad(One(ValidationError("2.2.2.09", s"Missing or incorrect elementFormDefault attribute in document ${xsdRootElem.docUri}")))
+      }
+
+    List(attributeFormDefaultResult, elementFormDefaultResult).combined.map(good => ())
   }
 }

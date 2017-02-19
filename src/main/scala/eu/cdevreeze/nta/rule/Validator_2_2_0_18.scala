@@ -1,5 +1,5 @@
 /*
- * Copyright 2011 Chris de Vreeze
+ * Copyright 2011-2017 Chris de Vreeze
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,26 +14,45 @@
  * limitations under the License.
  */
 
-package eu.cdevreeze.nta
-package rule
+package eu.cdevreeze.nta.rule
 
-import common.document.{ SchemaDocument, Taxonomy }
-import common.validate.{ Validator, ValidationResult }
-import eu.cdevreeze.yaidom._
+import scala.reflect.classTag
+
+import org.scalactic.Accumulation.convertGenTraversableOnceToCombinable
+import org.scalactic.Bad
+import org.scalactic.Every
+import org.scalactic.Good
+import org.scalactic.Or
+
+import eu.cdevreeze.nta.taxo.SubTaxonomy
+import eu.cdevreeze.nta.validator.SubTaxonomyValidator
+import eu.cdevreeze.nta.validator.ValidationError
+import eu.cdevreeze.nta.validator.ValidationErrorOrWarning
+import eu.cdevreeze.tqa.dom.Include
+import eu.cdevreeze.tqa.dom.XsdSchema
+import eu.cdevreeze.tqa.taxonomy.BasicTaxonomy
 
 /**
  * Validator of rule 2.2.0.18. The rule says that in the schema document xs:include elements must not occur.
  *
  * @author Chris de Vreeze
  */
-final class Validator_2_2_0_18 extends Validator[SchemaDocument, Taxonomy] {
+final class Validator_2_2_0_18 extends SubTaxonomyValidator {
 
-  def validate(doc: SchemaDocument)(context: Taxonomy): ValidationResult[SchemaDocument] = {
-    val matchingElms = doc.doc.documentElement filterElemsOrSelf { e => e.resolvedName == EName(SchemaDocument.NS, "include") }
+  def validate(subTaxonomy: SubTaxonomy): Unit Or Every[ValidationErrorOrWarning] = {
+    val xsdSchemas = subTaxonomy.asBasicTaxonomy.findAllXsdSchemas
 
-    if (matchingElms.isEmpty) ValidationResult.validResult(doc)
-    else {
-      new ValidationResult(doc, false, Vector("There are xs:include elements in the schema document"))
+    xsdSchemas.map(xsd => validate(xsd, subTaxonomy.backingTaxonomy)).combined.map(good => ())
+  }
+
+  private def validate(xsdRootElem: XsdSchema, backingTaxonomy: BasicTaxonomy): Unit Or Every[ValidationErrorOrWarning] = {
+    val invalidElems = xsdRootElem.findTopmostElemsOfType(classTag[Include])(_ => true)
+
+    if (invalidElems.isEmpty) {
+      Good(())
+    } else {
+      val errors = invalidElems.map(e => ValidationError("2.2.0.18", s"Found xs:include element in document ${xsdRootElem.docUri}"))
+      Bad(Every(errors.head, errors.tail: _*))
     }
   }
 }

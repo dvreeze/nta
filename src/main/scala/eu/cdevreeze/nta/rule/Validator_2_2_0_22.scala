@@ -1,5 +1,5 @@
 /*
- * Copyright 2011 Chris de Vreeze
+ * Copyright 2011-2017 Chris de Vreeze
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,26 +14,44 @@
  * limitations under the License.
  */
 
-package eu.cdevreeze.nta
-package rule
+package eu.cdevreeze.nta.rule
 
-import common.document.{ SchemaDocument, Taxonomy }
-import common.validate.{ Validator, ValidationResult }
-import eu.cdevreeze.yaidom._
+import scala.reflect.classTag
+
+import org.scalactic.Accumulation.convertGenTraversableOnceToCombinable
+import org.scalactic.Bad
+import org.scalactic.Every
+import org.scalactic.Good
+import org.scalactic.Or
+
+import eu.cdevreeze.nta.taxo.SubTaxonomy
+import eu.cdevreeze.nta.validator.SubTaxonomyValidator
+import eu.cdevreeze.nta.validator.ValidationError
+import eu.cdevreeze.nta.validator.ValidationErrorOrWarning
+import eu.cdevreeze.tqa.dom.Annotation
+import eu.cdevreeze.tqa.dom.XsdSchema
+import eu.cdevreeze.tqa.taxonomy.BasicTaxonomy
 
 /**
  * Validator of rule 2.2.0.22. The rule says that in the schema document at most one xs:annotation element may occur.
  *
  * @author Chris de Vreeze
  */
-final class Validator_2_2_0_22 extends Validator[SchemaDocument, Taxonomy] {
+final class Validator_2_2_0_22 extends SubTaxonomyValidator {
 
-  def validate(doc: SchemaDocument)(context: Taxonomy): ValidationResult[SchemaDocument] = {
-    val matchingElms = doc.doc.documentElement filterElemsOrSelf { e => e.resolvedName == EName(SchemaDocument.NS, "annotation") }
+  def validate(subTaxonomy: SubTaxonomy): Unit Or Every[ValidationErrorOrWarning] = {
+    val xsdSchemas = subTaxonomy.asBasicTaxonomy.findAllXsdSchemas
 
-    if (matchingElms.size <= 1) ValidationResult.validResult(doc)
+    xsdSchemas.map(xsd => validate(xsd, subTaxonomy.backingTaxonomy)).combined.map(good => ())
+  }
+
+  private def validate(xsdRootElem: XsdSchema, backingTaxonomy: BasicTaxonomy): Unit Or Every[ValidationErrorOrWarning] = {
+    val matchingElms = xsdRootElem.findAllElemsOrSelfOfType(classTag[Annotation])
+
+    if (matchingElms.isEmpty || matchingElms.tail.isEmpty) Good(())
     else {
-      new ValidationResult(doc, false, Vector("There are >= 2 xs:annotation elements in the schema document"))
+      val errors = matchingElms.tail.map(e => ValidationError("2.2.0.22", s"There are >= 2 xs:annotation elements in document ${xsdRootElem.docUri}"))
+      Bad(Every(errors.head, errors.tail: _*))
     }
   }
 }

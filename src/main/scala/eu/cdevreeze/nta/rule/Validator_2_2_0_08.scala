@@ -1,5 +1,5 @@
 /*
- * Copyright 2011 Chris de Vreeze
+ * Copyright 2011-2017 Chris de Vreeze
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,24 +14,40 @@
  * limitations under the License.
  */
 
-package eu.cdevreeze.nta
-package rule
+package eu.cdevreeze.nta.rule
 
-import common.document.{ SchemaDocument, Taxonomy }
-import common.validate.{ Validator, ValidationResult }
-import eu.cdevreeze.yaidom.EName
+import org.scalactic.Accumulation.convertGenTraversableOnceToCombinable
+import org.scalactic.Bad
+import org.scalactic.Every
+import org.scalactic.Good
+import org.scalactic.Or
+
+import eu.cdevreeze.nta.taxo.SubTaxonomy
+import eu.cdevreeze.nta.validator.SubTaxonomyValidator
+import eu.cdevreeze.nta.validator.ValidationError
+import eu.cdevreeze.nta.validator.ValidationErrorOrWarning
+import eu.cdevreeze.tqa.ENames.TargetNamespaceEName
+import eu.cdevreeze.tqa.dom.XsdSchema
+import eu.cdevreeze.tqa.taxonomy.BasicTaxonomy
 
 /**
  * Validator of rule 2.2.0.08. The rule says that the the schema document must have a @targetNamespace attribute.
  *
  * @author Chris de Vreeze
  */
-final class Validator_2_2_0_08 extends Validator[SchemaDocument, Taxonomy] {
+final class Validator_2_2_0_08 extends SubTaxonomyValidator {
 
-  def validate(doc: SchemaDocument)(context: Taxonomy): ValidationResult[SchemaDocument] = {
-    if (doc.doc.documentElement.attributeOption(EName("targetNamespace")).isDefined) ValidationResult.validResult(doc)
+  def validate(subTaxonomy: SubTaxonomy): Unit Or Every[ValidationErrorOrWarning] = {
+    val xsdSchemas = subTaxonomy.asBasicTaxonomy.findAllXsdSchemas
+
+    xsdSchemas.map(xsd => validate(xsd, subTaxonomy.backingTaxonomy)).combined.map(good => ())
+  }
+
+  private def validate(xsdRootElem: XsdSchema, backingTaxonomy: BasicTaxonomy): Unit Or Every[ValidationErrorOrWarning] = {
+    if (xsdRootElem.attributeOption(TargetNamespaceEName).isDefined) Good(())
     else {
-      new ValidationResult(doc, false, Vector("Missing @targetNamespace"))
+      val error = ValidationError("2.2.0.08", s"Missing targetNamespace attribute in document ${xsdRootElem.docUri}")
+      Bad(Every(error))
     }
   }
 }
