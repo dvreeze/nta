@@ -48,11 +48,9 @@ final class Validator_2_2_0_18 extends SubTaxonomyValidator {
   private def validate(xsdRootElem: XsdSchema, backingTaxonomy: BasicTaxonomy): Unit Or Every[ValidationErrorOrWarning] = {
     val invalidElems = xsdRootElem.findTopmostElemsOfType(classTag[Include])(_ => true)
 
-    if (invalidElems.isEmpty) {
-      Good(())
-    } else {
-      val errors = invalidElems.map(e => ValidationError("2.2.0.18", s"Found xs:include element in document ${xsdRootElem.docUri}"))
-      Bad(Every(errors.head, errors.tail: _*))
-    }
+    val errors =
+      invalidElems.map(e => ValidationError("2.2.0.18", s"Found xs:include element in document ${xsdRootElem.docUri}"))
+
+    Every.from(errors).map(errs => Bad(errs)).getOrElse(Good(()))
   }
 }

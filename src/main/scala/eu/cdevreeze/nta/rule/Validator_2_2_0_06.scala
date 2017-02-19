@@ -46,10 +46,9 @@ final class Validator_2_2_0_06 extends SubTaxonomyValidator {
     // This is a query on XML level, which is easy to implement using yaidom
     val unprefixedElms = xsdRootElem.filterElemsOrSelf(_.qname.prefixOption.isEmpty)
 
-    if (unprefixedElms.isEmpty) Good(())
-    else {
-      val errors = unprefixedElms.map(e => ValidationError("2.2.0.06", s"Found unprefixed element ${e.qname} in document ${xsdRootElem.docUri}"))
-      Bad(Every(errors.head, errors.tail: _*))
-    }
+    val errors =
+      unprefixedElms.map(e => ValidationError("2.2.0.06", s"Found unprefixed element ${e.qname} in document ${xsdRootElem.docUri}"))
+
+    Every.from(errors).map(errs => Bad(errs)).getOrElse(Good(()))
   }
 }

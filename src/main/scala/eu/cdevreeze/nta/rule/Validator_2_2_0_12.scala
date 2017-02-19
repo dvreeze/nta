@@ -70,16 +70,13 @@ final class Validator_2_2_0_12 extends SubTaxonomyValidator {
         path.parentPath.parentPath.lastEntry.elementName != XsAnnotationEName
     }
 
-    if (rejectedElemPaths.isEmpty) Good(())
-    else {
-      val errors =
-        rejectedElemPaths map { e =>
-          ValidationError(
-            "2.2.0.12",
-            s"Not all linkrole, arcrole and linkbase refs have 'parent path' /xs:schema/xs:annotation/xs:appinfo in document ${xsdRootElem.docUri}")
-        }
+    val errors =
+      rejectedElemPaths map { e =>
+        ValidationError(
+          "2.2.0.12",
+          s"Not all linkrole, arcrole and linkbase refs have 'parent path' /xs:schema/xs:annotation/xs:appinfo in document ${xsdRootElem.docUri}")
+      }
 
-      Bad(Every(errors.head, errors.tail: _*))
-    }
+    Every.from(errors).map(errs => Bad(errs)).getOrElse(Good(()))
   }
 }

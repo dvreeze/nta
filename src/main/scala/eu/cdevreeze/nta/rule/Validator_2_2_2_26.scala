@@ -62,11 +62,9 @@ final class Validator_2_2_2_26 extends SubTaxonomyValidator {
       conceptLabels.isEmpty
     }
 
-    if (offendingConcepts.isEmpty) {
-      Good(())
-    } else {
-      val errors = offendingConcepts.toSeq.map(concept => ValidationError("2.2.2.26", s"Found concept ${concept} without standard label in the local language in document ${xsdRootElem.docUri}"))
-      Bad(Every(errors.head, errors.tail: _*))
-    }
+    val errors =
+      offendingConcepts.toSeq.map(concept => ValidationError("2.2.2.26", s"Found concept ${concept} without standard label in the local language in document ${xsdRootElem.docUri}"))
+
+    Every.from(errors).map(errs => Bad(errs)).getOrElse(Good(()))
   }
 }

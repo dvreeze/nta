@@ -48,10 +48,9 @@ final class Validator_2_2_0_22 extends SubTaxonomyValidator {
   private def validate(xsdRootElem: XsdSchema, backingTaxonomy: BasicTaxonomy): Unit Or Every[ValidationErrorOrWarning] = {
     val matchingElms = xsdRootElem.findAllElemsOrSelfOfType(classTag[Annotation])
 
-    if (matchingElms.isEmpty || matchingElms.tail.isEmpty) Good(())
-    else {
-      val errors = matchingElms.tail.map(e => ValidationError("2.2.0.22", s"There are >= 2 xs:annotation elements in document ${xsdRootElem.docUri}"))
-      Bad(Every(errors.head, errors.tail: _*))
-    }
+    val errors =
+      matchingElms.drop(1).map(e => ValidationError("2.2.0.22", s"There are >= 2 xs:annotation elements in document ${xsdRootElem.docUri}"))
+
+    Every.from(errors).map(errs => Bad(errs)).getOrElse(Good(()))
   }
 }
