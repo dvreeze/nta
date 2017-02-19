@@ -52,6 +52,8 @@ object ValidatorRunner {
 
   private val logger = Logger.getGlobal
 
+  private val languageCode = System.getProperty("localLanguageCode", "nl")
+
   private val ruleValidatorMap: Map[String, SubTaxonomyValidator] = {
     Map(
       "2.2.0.06" -> new Validator_2_2_0_06,
@@ -63,7 +65,7 @@ object ValidatorRunner {
       "2.2.0.18" -> new Validator_2_2_0_18,
       "2.2.0.22" -> new Validator_2_2_0_22,
       "2.2.1.02" -> new Validator_2_2_1_02,
-      "2.2.2.26" -> new Validator_2_2_2_26)
+      "2.2.2.26" -> new Validator_2_2_2_26(languageCode))
   }
 
   def main(args: Array[String]): Unit = {

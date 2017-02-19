@@ -39,9 +39,8 @@ import eu.cdevreeze.yaidom.core.EName
  *
  * @author Chris de Vreeze
  */
-final class Validator_2_2_2_26 extends SubTaxonomyValidator {
+final class Validator_2_2_2_26(val languageCode: String) extends SubTaxonomyValidator {
 
-  private val languageCode = "nl"
   private val defaultResourceRole = "http://www.xbrl.org/2003/role/label"
 
   def validate(subTaxonomy: SubTaxonomy): Unit Or Every[ValidationErrorOrWarning] = {
