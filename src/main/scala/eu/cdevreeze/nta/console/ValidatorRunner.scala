@@ -29,7 +29,9 @@ import org.scalactic.Good
 import org.scalactic.Or
 import eu.cdevreeze.nta.rule._
 import eu.cdevreeze.nta.taxo.SubTaxonomy
+import eu.cdevreeze.nta.validator.ValidationError
 import eu.cdevreeze.nta.validator.ValidationErrorOrWarning
+import eu.cdevreeze.nta.validator.ValidationWarning
 import eu.cdevreeze.nta.validator.SubTaxonomyValidator
 import eu.cdevreeze.tqa.backingelem.DocumentBuilder
 import eu.cdevreeze.tqa.backingelem.indexed.IndexedDocumentBuilder
@@ -103,6 +105,20 @@ object ValidatorRunner {
       }).combined.map(good => ())
 
     logger.info(s"Validation result is OK: ${validationResult.isGood}")
+
+    val errorsAndWarnings: immutable.IndexedSeq[ValidationErrorOrWarning] =
+      validationResult.fold(good => Vector[ValidationErrorOrWarning](), bad => bad.toIndexedSeq)
+
+    val errors = errorsAndWarnings collect { case err: ValidationError => err }
+    val warnings = errorsAndWarnings collect { case warn: ValidationWarning => warn }
+
+    errors foreach { err =>
+      logger.severe(err.toString)
+    }
+
+    warnings foreach { warn =>
+      logger.warning(warn.toString)
+    }
   }
 
   private def uriToLocalUri(uri: URI, rootDir: File): URI = {
