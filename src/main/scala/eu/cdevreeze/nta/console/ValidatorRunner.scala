@@ -36,11 +36,16 @@ import eu.cdevreeze.nta.validator.SubTaxonomyValidator
 import eu.cdevreeze.tqa.backingelem.DocumentBuilder
 import eu.cdevreeze.tqa.backingelem.indexed.IndexedDocumentBuilder
 import eu.cdevreeze.tqa.backingelem.nodeinfo.SaxonDocumentBuilder
+import eu.cdevreeze.tqa.backingelem.nodeinfo.SaxonElem
+import eu.cdevreeze.tqa.dom.TaxonomyElem
 import eu.cdevreeze.tqa.relationship.DefaultRelationshipFactory
 import eu.cdevreeze.tqa.relationship.Relationship
 import eu.cdevreeze.tqa.taxonomybuilder.DefaultDtsCollector
 import eu.cdevreeze.tqa.taxonomybuilder.TaxonomyBuilder
+import eu.cdevreeze.yaidom.indexed.IndexedScopedElem
 import eu.cdevreeze.yaidom.parse.DocumentParserUsingStax
+import eu.cdevreeze.yaidom.queryapi.Nodes
+import eu.cdevreeze.yaidom.simple.Elem
 import net.sf.saxon.s9api.Processor
 
 /**
@@ -56,16 +61,29 @@ object ValidatorRunner {
 
   private val ruleValidatorMap: Map[String, SubTaxonomyValidator] = {
     Map(
+      "2.2.0.05" -> new Validator_2_2_0_05(getCommentChildren),
       "2.2.0.06" -> new Validator_2_2_0_06,
       "2.2.0.08" -> new Validator_2_2_0_08,
       "2.2.0.09" -> new Validator_2_2_0_09,
       "2.2.0.10" -> new Validator_2_2_0_10,
+      "2.2.0.11" -> new Validator_2_2_0_11,
       "2.2.0.12" -> new Validator_2_2_0_12,
       "2.2.0.14" -> new Validator_2_2_0_14,
       "2.2.0.18" -> new Validator_2_2_0_18,
       "2.2.0.22" -> new Validator_2_2_0_22,
       "2.2.1.02" -> new Validator_2_2_1_02,
       "2.2.2.26" -> new Validator_2_2_2_26(languageCode))
+  }
+
+  private def getCommentChildren(taxoElem: TaxonomyElem): immutable.IndexedSeq[Nodes.Comment] = {
+    taxoElem.backingElem match {
+      case e: SaxonElem =>
+        e.commentChildren
+      case e: IndexedScopedElem[_] if e.underlyingElem.isInstanceOf[Elem] =>
+        e.underlyingElem.asInstanceOf[Elem].commentChildren
+      case e =>
+        sys.error(s"Could not query for comment children in $taxoElem")
+    }
   }
 
   def main(args: Array[String]): Unit = {
