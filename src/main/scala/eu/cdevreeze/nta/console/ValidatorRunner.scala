@@ -29,6 +29,7 @@ import org.scalactic.Good
 import org.scalactic.Or
 import eu.cdevreeze.nta.rule._
 import eu.cdevreeze.nta.taxo.SubTaxonomy
+import eu.cdevreeze.nta.validator.DtsValidator
 import eu.cdevreeze.nta.validator.ValidationError
 import eu.cdevreeze.nta.validator.ValidationErrorOrWarning
 import eu.cdevreeze.nta.validator.ValidationWarning
@@ -38,12 +39,15 @@ import eu.cdevreeze.tqa.backingelem.indexed.IndexedDocumentBuilder
 import eu.cdevreeze.tqa.backingelem.nodeinfo.SaxonDocumentBuilder
 import eu.cdevreeze.tqa.backingelem.nodeinfo.SaxonElem
 import eu.cdevreeze.tqa.dom.TaxonomyElem
+import eu.cdevreeze.tqa.dom.XsdSchema
 import eu.cdevreeze.tqa.relationship.DefaultRelationshipFactory
 import eu.cdevreeze.tqa.relationship.Relationship
+import eu.cdevreeze.tqa.taxonomy.BasicTaxonomy
 import eu.cdevreeze.tqa.taxonomybuilder.DefaultDtsCollector
 import eu.cdevreeze.tqa.taxonomybuilder.TaxonomyBuilder
 import eu.cdevreeze.yaidom.indexed.IndexedScopedElem
 import eu.cdevreeze.yaidom.parse.DocumentParserUsingStax
+import eu.cdevreeze.yaidom.queryapi.BackingElemApi
 import eu.cdevreeze.yaidom.queryapi.Nodes
 import eu.cdevreeze.yaidom.simple.Elem
 import net.sf.saxon.s9api.Processor
@@ -59,7 +63,8 @@ object ValidatorRunner {
 
   private val languageCode = System.getProperty("localLanguageCode", "nl")
 
-  private val ruleValidatorMap: Map[String, SubTaxonomyValidator] = {
+  private def ruleValidatorMap(entrypoints: Set[URI]): Map[String, SubTaxonomyValidator] = {
+    // TODO Type class for enriching BackingElemApi instead of function getCommentChildren below.
     Map(
       "2.2.0.05" -> new Validator_2_2_0_05(getCommentChildren),
       "2.2.0.06" -> new Validator_2_2_0_06,
@@ -70,9 +75,17 @@ object ValidatorRunner {
       "2.2.0.12" -> new Validator_2_2_0_12,
       "2.2.0.14" -> new Validator_2_2_0_14,
       "2.2.0.18" -> new Validator_2_2_0_18,
+      "2.2.0.19" -> new Validator_2_2_0_19,
       "2.2.0.22" -> new Validator_2_2_0_22,
+      "2.2.0.23" -> new Validator_2_2_0_23(entrypoints),
+      "2.2.0.27" -> new Validator_2_2_0_27,
       "2.2.1.02" -> new Validator_2_2_1_02,
       "2.2.2.26" -> new Validator_2_2_2_26(languageCode))
+  }
+
+  private val dtsRuleValidatorMap: Map[String, DtsValidator] = {
+    Map(
+      "2.2.0.28" -> new Validator_2_2_0_28)
   }
 
   private def getCommentChildren(taxoElem: TaxonomyElem): immutable.IndexedSeq[Nodes.Comment] = {
@@ -118,13 +131,29 @@ object ValidatorRunner {
 
     logger.info("Starting rule validation ...")
 
-    val validationResult: Unit Or Every[ValidationErrorOrWarning] =
-      (ruleValidatorMap.values.toIndexedSeq.sortBy(_.getClass.getSimpleName) map { validator =>
+    val normalValidationResult: Unit Or Every[ValidationErrorOrWarning] =
+      (ruleValidatorMap(entrypointUris).values.toIndexedSeq.sortBy(_.getClass.getSimpleName) map { validator =>
         logger.info(s"Running validator ${validator.getClass.getSimpleName}")
         validator.validate(subTaxo)
       }).combined.map(good => ())
 
-    logger.info(s"Validation result is OK: ${validationResult.isGood}")
+    logger.info(s"Validation result for regular rules is OK: ${normalValidationResult.isGood}")
+
+    val dtsValidationResult: Unit Or Every[ValidationErrorOrWarning] = {
+      (dtsRuleValidatorMap.values.toIndexedSeq.sortBy(_.getClass.getSimpleName) flatMap { validator =>
+        entrypointUris.toSeq.sortBy(_.toString) map { entrypointUri =>
+          val dts = getDts(entrypointUri, basicTaxo, lenient)
+
+          logger.info(s"Running DTS validator ${validator.getClass.getSimpleName} for entrypoint ${entrypointUri}")
+          validator.validate(dts)
+        }
+      }).combined.map(good => ())
+    }
+
+    logger.info(s"Validation result for DTS rules is OK: ${dtsValidationResult.isGood}")
+
+    val validationResult: Unit Or Every[ValidationErrorOrWarning] =
+      List(normalValidationResult, dtsValidationResult).combined.map(good => ())
 
     val errorsAndWarnings: immutable.IndexedSeq[ValidationErrorOrWarning] =
       validationResult.fold(good => Vector[ValidationErrorOrWarning](), bad => bad.toIndexedSeq)
@@ -161,5 +190,31 @@ object ValidatorRunner {
     } else {
       new IndexedDocumentBuilder(DocumentParserUsingStax.newInstance(), uriToLocalUri(_, rootDir))
     }
+  }
+
+  private def getDts(entrypointUri: URI, context: BasicTaxonomy, lenient: Boolean): BasicTaxonomy = {
+    // Inefficient to recompute the relationships
+
+    val documentBuilder = new DocumentBuilder {
+
+      type BackingElem = BackingElemApi
+
+      def build(uri: URI): BackingElem = {
+        context.taxonomyBase.rootElemUriMap.getOrElse(uri, sys.error(s"Missing document $uri")).backingElem
+      }
+    }
+
+    val documentCollector = DefaultDtsCollector(Set(entrypointUri))
+
+    val relationshipFactory =
+      if (lenient) DefaultRelationshipFactory.LenientInstance else DefaultRelationshipFactory.StrictInstance
+
+    val taxoBuilder =
+      TaxonomyBuilder.
+        withDocumentBuilder(documentBuilder).
+        withDocumentCollector(documentCollector).
+        withRelationshipFactory(relationshipFactory)
+
+    taxoBuilder.build()
   }
 }
