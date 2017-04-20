@@ -14,11 +14,11 @@ crossScalaVersions := Seq("2.11.8", "2.12.1")
 
 scalacOptions ++= Seq("-unchecked", "-deprecation", "-feature", "-Xfatal-warnings", "-Xlint")
 
-libraryDependencies += "eu.cdevreeze.tqa" %% "tqa" % "0.4.0"
+libraryDependencies += "eu.cdevreeze.tqa" %% "tqa" % "0.4.3"
 
-libraryDependencies += "eu.cdevreeze.yaidom" %% "yaidom" % "1.6.1"
+libraryDependencies += "eu.cdevreeze.yaidom" %% "yaidom" % "1.6.2"
 
-libraryDependencies += "net.sf.saxon" % "Saxon-HE" % "9.7.0-10"
+libraryDependencies += "net.sf.saxon" % "Saxon-HE" % "9.7.0-18"
 
 libraryDependencies += "org.scalactic" %% "scalactic" % "3.0.1"
 
