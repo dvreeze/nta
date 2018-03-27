@@ -29,11 +29,11 @@ import eu.cdevreeze.nta.taxo.SubTaxonomy
 import eu.cdevreeze.nta.validator.SubTaxonomyValidator
 import eu.cdevreeze.nta.validator.ValidationError
 import eu.cdevreeze.nta.validator.ValidationErrorOrWarning
-import eu.cdevreeze.tqa.dom.ConceptDeclaration
-import eu.cdevreeze.tqa.dom.LabelLink
-import eu.cdevreeze.tqa.dom.LinkbaseRef
-import eu.cdevreeze.tqa.dom.XsdSchema
-import eu.cdevreeze.tqa.taxonomy.BasicTaxonomy
+import eu.cdevreeze.tqa.base.dom.ConceptDeclaration
+import eu.cdevreeze.tqa.base.dom.LabelLink
+import eu.cdevreeze.tqa.base.dom.LinkbaseRef
+import eu.cdevreeze.tqa.base.dom.XsdSchema
+import eu.cdevreeze.tqa.base.taxonomy.BasicTaxonomy
 
 /**
  * Validator of rule 2.2.1.02. The rule says that each schema defining concepts must link to a label linkbase.

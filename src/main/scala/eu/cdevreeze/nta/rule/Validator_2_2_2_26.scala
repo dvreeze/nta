@@ -28,10 +28,10 @@ import eu.cdevreeze.nta.taxo.SubTaxonomy
 import eu.cdevreeze.nta.validator.SubTaxonomyValidator
 import eu.cdevreeze.nta.validator.ValidationError
 import eu.cdevreeze.nta.validator.ValidationErrorOrWarning
-import eu.cdevreeze.tqa.dom.ConceptDeclaration
-import eu.cdevreeze.tqa.dom.XsdSchema
-import eu.cdevreeze.tqa.relationship.ConceptLabelRelationship
-import eu.cdevreeze.tqa.taxonomy.BasicTaxonomy
+import eu.cdevreeze.tqa.base.dom.ConceptDeclaration
+import eu.cdevreeze.tqa.base.dom.XsdSchema
+import eu.cdevreeze.tqa.base.relationship.ConceptLabelRelationship
+import eu.cdevreeze.tqa.base.taxonomy.BasicTaxonomy
 import eu.cdevreeze.yaidom.core.EName
 
 /**

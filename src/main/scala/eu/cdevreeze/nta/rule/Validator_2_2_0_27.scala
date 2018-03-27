@@ -28,9 +28,9 @@ import eu.cdevreeze.nta.taxo.SubTaxonomy
 import eu.cdevreeze.nta.validator.SubTaxonomyValidator
 import eu.cdevreeze.nta.validator.ValidationError
 import eu.cdevreeze.nta.validator.ValidationErrorOrWarning
-import eu.cdevreeze.tqa.dom.LinkbaseRef
-import eu.cdevreeze.tqa.dom.XsdSchema
-import eu.cdevreeze.tqa.taxonomy.BasicTaxonomy
+import eu.cdevreeze.tqa.base.dom.LinkbaseRef
+import eu.cdevreeze.tqa.base.dom.XsdSchema
+import eu.cdevreeze.tqa.base.taxonomy.BasicTaxonomy
 
 /**
  * Validator of rule 2.2.0.27. The rule says that schema must have unique linkbaseRefs.

@@ -28,9 +28,9 @@ import eu.cdevreeze.nta.taxo.SubTaxonomy
 import eu.cdevreeze.nta.validator.SubTaxonomyValidator
 import eu.cdevreeze.nta.validator.ValidationError
 import eu.cdevreeze.nta.validator.ValidationErrorOrWarning
-import eu.cdevreeze.tqa.dom.Annotation
-import eu.cdevreeze.tqa.dom.XsdSchema
-import eu.cdevreeze.tqa.taxonomy.BasicTaxonomy
+import eu.cdevreeze.tqa.base.dom.Annotation
+import eu.cdevreeze.tqa.base.dom.XsdSchema
+import eu.cdevreeze.tqa.base.taxonomy.BasicTaxonomy
 
 /**
  * Validator of rule 2.2.0.22. The rule says that in the schema document at most one xs:annotation element may occur.

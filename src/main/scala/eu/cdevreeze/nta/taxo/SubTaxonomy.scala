@@ -18,7 +18,7 @@ package eu.cdevreeze.nta.taxo
 
 import java.net.URI
 
-import eu.cdevreeze.tqa.taxonomy.BasicTaxonomy
+import eu.cdevreeze.tqa.base.taxonomy.BasicTaxonomy
 
 /**
  * Sub-taxonomy, consisting of a TQA "backing" taxonomy and an explicit subset of the document URIs

@@ -29,8 +29,8 @@ import eu.cdevreeze.nta.validator.ValidationError
 import eu.cdevreeze.nta.validator.ValidationErrorOrWarning
 import eu.cdevreeze.tqa.ENames.AttributeFormDefaultEName
 import eu.cdevreeze.tqa.ENames.ElementFormDefaultEName
-import eu.cdevreeze.tqa.dom.XsdSchema
-import eu.cdevreeze.tqa.taxonomy.BasicTaxonomy
+import eu.cdevreeze.tqa.base.dom.XsdSchema
+import eu.cdevreeze.tqa.base.taxonomy.BasicTaxonomy
 
 /**
  * Validator of rule 2.2.0.09. The rule says that the the schema document must have a @attributeFormDefault attribute

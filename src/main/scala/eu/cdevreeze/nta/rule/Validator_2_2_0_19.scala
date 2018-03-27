@@ -26,8 +26,8 @@ import eu.cdevreeze.nta.taxo.SubTaxonomy
 import eu.cdevreeze.nta.validator.SubTaxonomyValidator
 import eu.cdevreeze.nta.validator.ValidationError
 import eu.cdevreeze.nta.validator.ValidationErrorOrWarning
-import eu.cdevreeze.tqa.dom.XsdSchema
-import eu.cdevreeze.tqa.taxonomy.BasicTaxonomy
+import eu.cdevreeze.tqa.base.dom.XsdSchema
+import eu.cdevreeze.tqa.base.taxonomy.BasicTaxonomy
 
 /**
  * Validator of rule 2.2.0.19. The rule says that in the schema document all namespace declarations must occur only in
@@ -47,8 +47,6 @@ final class Validator_2_2_0_19 extends SubTaxonomyValidator {
   }
 
   private def validate(xsdRootElem: XsdSchema, backingTaxonomy: BasicTaxonomy): Unit Or Every[ValidationErrorOrWarning] = {
-    val rootElemScope = xsdRootElem.scope
-
     val invalidElems = xsdRootElem.filterElems(e => e.scope != e.backingElem.parent.scope)
 
     val errors =

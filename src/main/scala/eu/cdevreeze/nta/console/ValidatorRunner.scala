@@ -23,33 +23,26 @@ import java.util.logging.Logger
 import scala.collection.immutable
 
 import org.scalactic.Accumulation.convertGenTraversableOnceToCombinable
-import org.scalactic.Bad
 import org.scalactic.Every
-import org.scalactic.Good
 import org.scalactic.Or
 import eu.cdevreeze.nta.rule._
 import eu.cdevreeze.nta.taxo.SubTaxonomy
 import eu.cdevreeze.nta.validator.DtsValidator
+import eu.cdevreeze.nta.validator.SubTaxonomyValidator
 import eu.cdevreeze.nta.validator.ValidationError
 import eu.cdevreeze.nta.validator.ValidationErrorOrWarning
 import eu.cdevreeze.nta.validator.ValidationWarning
-import eu.cdevreeze.nta.validator.SubTaxonomyValidator
-import eu.cdevreeze.tqa.backingelem.DocumentBuilder
-import eu.cdevreeze.tqa.backingelem.indexed.IndexedDocumentBuilder
-import eu.cdevreeze.tqa.backingelem.nodeinfo.SaxonDocumentBuilder
-import eu.cdevreeze.tqa.backingelem.nodeinfo.SaxonElem
-import eu.cdevreeze.tqa.dom.TaxonomyElem
-import eu.cdevreeze.tqa.dom.XsdSchema
-import eu.cdevreeze.tqa.relationship.DefaultRelationshipFactory
-import eu.cdevreeze.tqa.relationship.Relationship
-import eu.cdevreeze.tqa.taxonomy.BasicTaxonomy
-import eu.cdevreeze.tqa.taxonomybuilder.DefaultDtsCollector
-import eu.cdevreeze.tqa.taxonomybuilder.TaxonomyBuilder
-import eu.cdevreeze.yaidom.indexed.IndexedScopedElem
+import eu.cdevreeze.tqa.base.relationship.DefaultRelationshipFactory
+import eu.cdevreeze.tqa.base.taxonomy.BasicTaxonomy
+import eu.cdevreeze.tqa.base.taxonomybuilder.DefaultDtsCollector
+import eu.cdevreeze.tqa.base.taxonomybuilder.DocumentCollector
+import eu.cdevreeze.tqa.base.taxonomybuilder.TaxonomyBuilder
+import eu.cdevreeze.tqa.docbuilder.DocumentBuilder
+import eu.cdevreeze.tqa.docbuilder.indexed.IndexedDocumentBuilder
+import eu.cdevreeze.tqa.docbuilder.jvm.UriResolvers
+import eu.cdevreeze.tqa.docbuilder.saxon.SaxonDocumentBuilder
 import eu.cdevreeze.yaidom.parse.DocumentParserUsingStax
-import eu.cdevreeze.yaidom.queryapi.BackingElemApi
-import eu.cdevreeze.yaidom.queryapi.Nodes
-import eu.cdevreeze.yaidom.simple.Elem
+import eu.cdevreeze.yaidom.queryapi.BackingDocumentApi
 import net.sf.saxon.s9api.Processor
 
 /**
@@ -66,7 +59,7 @@ object ValidatorRunner {
   private def ruleValidatorMap(entrypoints: Set[URI]): Map[String, SubTaxonomyValidator] = {
     // TODO Type class for enriching BackingElemApi instead of function getCommentChildren below.
     Map(
-      "2.2.0.05" -> new Validator_2_2_0_05(getCommentChildren),
+      "2.2.0.05" -> new Validator_2_2_0_05,
       "2.2.0.06" -> new Validator_2_2_0_06,
       "2.2.0.08" -> new Validator_2_2_0_08,
       "2.2.0.09" -> new Validator_2_2_0_09,
@@ -88,17 +81,6 @@ object ValidatorRunner {
       "2.2.0.28" -> new Validator_2_2_0_28)
   }
 
-  private def getCommentChildren(taxoElem: TaxonomyElem): immutable.IndexedSeq[Nodes.Comment] = {
-    taxoElem.backingElem match {
-      case e: SaxonElem =>
-        e.commentChildren
-      case e: IndexedScopedElem[_] if e.underlyingElem.isInstanceOf[Elem] =>
-        e.underlyingElem.asInstanceOf[Elem].commentChildren
-      case e =>
-        sys.error(s"Could not query for comment children in $taxoElem")
-    }
-  }
-
   def main(args: Array[String]): Unit = {
     require(args.size >= 3, s"Usage: ValidatorRunner <taxo root dir> <sub-taxo document URI start> <entrypoint URI> ...")
     val rootDir = new File(args(0))
@@ -110,7 +92,7 @@ object ValidatorRunner {
     val useSaxon = System.getProperty("useSaxon", "false").toBoolean
 
     val documentBuilder = getDocumentBuilder(useSaxon, rootDir)
-    val documentCollector = DefaultDtsCollector(entrypointUris)
+    val documentCollector: DocumentCollector = DefaultDtsCollector()
 
     val lenient = System.getProperty("lenient", "false").toBoolean
 
@@ -125,7 +107,7 @@ object ValidatorRunner {
 
     logger.info(s"Starting building the DTS with entrypoint(s) ${entrypointUris.mkString(", ")}")
 
-    val basicTaxo = taxoBuilder.build()
+    val basicTaxo = taxoBuilder.build(entrypointUris)
 
     val subTaxo = new SubTaxonomy(basicTaxo, (uri => uri.toString.startsWith(documentUriStart.toString)))
 
@@ -170,25 +152,13 @@ object ValidatorRunner {
     }
   }
 
-  private def uriToLocalUri(uri: URI, rootDir: File): URI = {
-    // Not robust
-    val relativePath = uri.getScheme match {
-      case "http"  => uri.toString.drop("http://".size)
-      case "https" => uri.toString.drop("https://".size)
-      case _       => sys.error(s"Unexpected URI $uri")
-    }
-
-    val f = new File(rootDir, relativePath.dropWhile(_ == '/'))
-    f.toURI
-  }
-
   private def getDocumentBuilder(useSaxon: Boolean, rootDir: File): DocumentBuilder = {
     if (useSaxon) {
       val processor = new Processor(false)
 
-      new SaxonDocumentBuilder(processor.newDocumentBuilder(), uriToLocalUri(_, rootDir))
+      new SaxonDocumentBuilder(processor.newDocumentBuilder(), UriResolvers.fromLocalMirrorRootDirectory(rootDir))
     } else {
-      new IndexedDocumentBuilder(DocumentParserUsingStax.newInstance(), uriToLocalUri(_, rootDir))
+      new IndexedDocumentBuilder(DocumentParserUsingStax.newInstance(), UriResolvers.fromLocalMirrorRootDirectory(rootDir))
     }
   }
 
@@ -197,14 +167,14 @@ object ValidatorRunner {
 
     val documentBuilder = new DocumentBuilder {
 
-      type BackingElem = BackingElemApi
+      type BackingDoc = BackingDocumentApi
 
-      def build(uri: URI): BackingElem = {
-        context.taxonomyBase.rootElemUriMap.getOrElse(uri, sys.error(s"Missing document $uri")).backingElem
+      def build(uri: URI): BackingDoc = {
+        context.taxonomyBase.taxonomyDocUriMap.getOrElse(uri, sys.error(s"Missing document $uri")).backingDocument
       }
     }
 
-    val documentCollector = DefaultDtsCollector(Set(entrypointUri))
+    val documentCollector = DefaultDtsCollector()
 
     val relationshipFactory =
       if (lenient) DefaultRelationshipFactory.LenientInstance else DefaultRelationshipFactory.StrictInstance
@@ -215,6 +185,6 @@ object ValidatorRunner {
         withDocumentCollector(documentCollector).
         withRelationshipFactory(relationshipFactory)
 
-    taxoBuilder.build()
+    taxoBuilder.build(Set(entrypointUri))
   }
 }

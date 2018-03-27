@@ -32,12 +32,12 @@ import eu.cdevreeze.tqa.ENames.ReferEName
 import eu.cdevreeze.tqa.ENames.TypeEName
 import eu.cdevreeze.tqa.ENames.XsKeyrefEName
 import eu.cdevreeze.tqa.Namespaces.LinkNamespace
-import eu.cdevreeze.tqa.dom.AttributeDeclaration
-import eu.cdevreeze.tqa.dom.ElementDeclaration
-import eu.cdevreeze.tqa.dom.Reference
-import eu.cdevreeze.tqa.dom.RestrictionOrExtension
-import eu.cdevreeze.tqa.dom.XsdSchema
-import eu.cdevreeze.tqa.taxonomy.BasicTaxonomy
+import eu.cdevreeze.tqa.base.dom.AttributeDeclaration
+import eu.cdevreeze.tqa.base.dom.ElementDeclaration
+import eu.cdevreeze.tqa.base.dom.Reference
+import eu.cdevreeze.tqa.base.dom.RestrictionOrExtension
+import eu.cdevreeze.tqa.base.dom.XsdSchema
+import eu.cdevreeze.tqa.base.taxonomy.BasicTaxonomy
 import eu.cdevreeze.yaidom.core.EName
 import eu.cdevreeze.yaidom.queryapi.ScopedElemApi
 

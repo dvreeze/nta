@@ -3,8 +3,14 @@
 .classpath
 .project
 .settings/
-project/
 target/
 temp/
 .history
 src/test/resources/extracted-taxonomies/**/*
+
+# /project/
+/project/boot
+/project/project/
+/project/target/
+/project/build/target
+

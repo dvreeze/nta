@@ -24,7 +24,7 @@ import org.scalactic.Or
 import eu.cdevreeze.nta.validator.DtsValidator
 import eu.cdevreeze.nta.validator.ValidationError
 import eu.cdevreeze.nta.validator.ValidationErrorOrWarning
-import eu.cdevreeze.tqa.taxonomy.BasicTaxonomy
+import eu.cdevreeze.tqa.base.taxonomy.BasicTaxonomy
 
 /**
  * Validator of rule 2.2.0.28. The rule says that each DTS must have no arcs with the same ELR, source

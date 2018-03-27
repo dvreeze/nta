@@ -30,12 +30,12 @@ import eu.cdevreeze.nta.validator.ValidationError
 import eu.cdevreeze.nta.validator.ValidationErrorOrWarning
 import eu.cdevreeze.tqa.ENames.XsAnnotationEName
 import eu.cdevreeze.tqa.ENames.XsAppinfoEName
-import eu.cdevreeze.tqa.dom.ArcroleRef
-import eu.cdevreeze.tqa.dom.LinkbaseRef
-import eu.cdevreeze.tqa.dom.RoleRef
-import eu.cdevreeze.tqa.dom.SimpleLink
-import eu.cdevreeze.tqa.dom.XsdSchema
-import eu.cdevreeze.tqa.taxonomy.BasicTaxonomy
+import eu.cdevreeze.tqa.base.dom.ArcroleRef
+import eu.cdevreeze.tqa.base.dom.LinkbaseRef
+import eu.cdevreeze.tqa.base.dom.RoleRef
+import eu.cdevreeze.tqa.base.dom.SimpleLink
+import eu.cdevreeze.tqa.base.dom.XsdSchema
+import eu.cdevreeze.tqa.base.taxonomy.BasicTaxonomy
 
 /**
  * Validator of rule 2.2.0.12. The rule says that in the schema document all link roles, arc roles and linkbase refs

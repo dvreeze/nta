@@ -19,7 +19,7 @@ package eu.cdevreeze.nta.validator
 import org.scalactic.Every
 import org.scalactic.Or
 
-import eu.cdevreeze.tqa.taxonomy.BasicTaxonomy
+import eu.cdevreeze.tqa.base.taxonomy.BasicTaxonomy
 
 /**
  * Validator of a DTS for a given (DTS-specific) rule.

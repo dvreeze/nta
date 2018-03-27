@@ -16,8 +16,6 @@
 
 package eu.cdevreeze.nta.rule
 
-import scala.collection.immutable
-
 import org.scalactic.Accumulation.convertGenTraversableOnceToCombinable
 import org.scalactic.Bad
 import org.scalactic.Every
@@ -28,11 +26,9 @@ import eu.cdevreeze.nta.taxo.SubTaxonomy
 import eu.cdevreeze.nta.validator.SubTaxonomyValidator
 import eu.cdevreeze.nta.validator.ValidationError
 import eu.cdevreeze.nta.validator.ValidationErrorOrWarning
-import eu.cdevreeze.tqa.dom.TaxonomyElem
-import eu.cdevreeze.tqa.dom.XsdSchema
-import eu.cdevreeze.tqa.taxonomy.BasicTaxonomy
-import eu.cdevreeze.yaidom.queryapi.Nodes
-import eu.cdevreeze.yaidom.resolved.ResolvedNodes
+import eu.cdevreeze.tqa.base.dom.TaxonomyCommentNode
+import eu.cdevreeze.tqa.base.dom.XsdSchema
+import eu.cdevreeze.tqa.base.taxonomy.BasicTaxonomy
 
 /**
  * Validator of rule 2.2.0.05. The rule says that there must be at most one comment in the schema document.
@@ -43,7 +39,7 @@ import eu.cdevreeze.yaidom.resolved.ResolvedNodes
  *
  * @author Chris de Vreeze
  */
-final class Validator_2_2_0_05(val getCommentChildren: TaxonomyElem => immutable.IndexedSeq[Nodes.Comment]) extends SubTaxonomyValidator {
+final class Validator_2_2_0_05 extends SubTaxonomyValidator {
 
   def validate(subTaxonomy: SubTaxonomy): Unit Or Every[ValidationErrorOrWarning] = {
     val xsdSchemas = subTaxonomy.asBasicTaxonomy.findAllXsdSchemas
@@ -52,7 +48,8 @@ final class Validator_2_2_0_05(val getCommentChildren: TaxonomyElem => immutable
   }
 
   private def validate(xsdRootElem: XsdSchema, backingTaxonomy: BasicTaxonomy): Unit Or Every[ValidationErrorOrWarning] = {
-    val offendingComments = xsdRootElem.findAllElemsOrSelf.flatMap(e => getCommentChildren(e))
+    val offendingComments =
+      xsdRootElem.findAllElemsOrSelf.flatMap(_.children) collect { case c: TaxonomyCommentNode => c }
 
     val errors =
       offendingComments.map(c => ValidationError("2.2.0.05", s"Non-allowed comment found in document element tree in document ${xsdRootElem.docUri}"))

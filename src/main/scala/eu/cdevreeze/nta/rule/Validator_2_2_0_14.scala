@@ -29,11 +29,11 @@ import eu.cdevreeze.nta.taxo.SubTaxonomy
 import eu.cdevreeze.nta.validator.SubTaxonomyValidator
 import eu.cdevreeze.nta.validator.ValidationError
 import eu.cdevreeze.nta.validator.ValidationErrorOrWarning
-import eu.cdevreeze.tqa.dom.Annotation
-import eu.cdevreeze.tqa.dom.Appinfo
-import eu.cdevreeze.tqa.dom.Import
-import eu.cdevreeze.tqa.dom.XsdSchema
-import eu.cdevreeze.tqa.taxonomy.BasicTaxonomy
+import eu.cdevreeze.tqa.base.dom.Annotation
+import eu.cdevreeze.tqa.base.dom.Appinfo
+import eu.cdevreeze.tqa.base.dom.Import
+import eu.cdevreeze.tqa.base.dom.XsdSchema
+import eu.cdevreeze.tqa.base.taxonomy.BasicTaxonomy
 
 /**
  * Validator of rule 2.2.0.14. The rule says that in the schema document xs:import elements must come directly after //xs:annotation/xs:appinfo.
