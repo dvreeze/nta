@@ -33,6 +33,6 @@ final class SubTaxonomy(val backingTaxonomy: BasicTaxonomy, val filterSubTaxonom
 
   def asBasicTaxonomy: BasicTaxonomy = {
     val docUris = backingTaxonomy.taxonomyBase.rootElemUriMap.keySet.filter(filterSubTaxonomy)
-    backingTaxonomy.filterDocumentUris(docUris)
+    backingTaxonomy.filteringDocumentUris(docUris)
   }
 }
