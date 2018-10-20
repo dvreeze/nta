@@ -16,7 +16,12 @@
 
 package eu.cdevreeze.nta.ntarule
 
+import java.net.URI
+
+import scala.collection.JavaConverters._
+
 import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
 
 import eu.cdevreeze.nta.common.config.ConfigWrapper
 
@@ -26,14 +31,39 @@ import eu.cdevreeze.nta.common.config.ConfigWrapper
  * @author Chris de Vreeze
  */
 final class NtaRuleConfigWrapper(val underlyingConfig: Config) extends ConfigWrapper {
-  checkConfig(underlyingConfig)
+  underlyingConfig.checkValid(ConfigFactory.defaultReference)
 
   def localLanguageCode: String = {
-    // TODO
-    "nl"
+    underlyingConfig.getString("local-language-code")
   }
 
-  private def checkConfig(config: Config): Unit = {
-    // TODO
+  def defaultExcludedDocumentUris: Set[URI] = {
+    underlyingConfig.getStringList("default-excluded-document-uris").asScala
+      .map(u => URI.create(u)).toSet
+  }
+
+  def defaultExcludedEntrypointDocumentUris: Set[URI] = {
+    underlyingConfig.getStringList("default-excluded-entrypoint-document-uris").asScala
+      .map(u => URI.create(u)).toSet
+  }
+
+  def excludedDocumentUrisForRule(ruleName: String): Set[URI] = {
+    val path = s"$ruleName.excluded-document-uris"
+
+    if (underlyingConfig.hasPath(path)) {
+      underlyingConfig.getStringList(path).asScala.map(u => URI.create(u)).toSet
+    } else {
+      Set.empty
+    }
+  }
+
+  def excludedEntrypointDocumentUrisForRule(ruleName: String): Set[URI] = {
+    val path = s"$ruleName.excluded-entrypoint-document-uris"
+
+    if (underlyingConfig.hasPath(path)) {
+      underlyingConfig.getStringList(path).asScala.map(u => URI.create(u)).toSet
+    } else {
+      Set.empty
+    }
   }
 }

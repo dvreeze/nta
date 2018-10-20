@@ -29,6 +29,11 @@ trait TaxonomyValidatorFactory {
 
   type CfgWrapper <: ConfigWrapper
 
+  /**
+   * Returns the unique rule name, such as "2.02.00.05".
+   */
+  def ruleName: String
+
   def create(configWrapper: CfgWrapper): Validator
 }
 

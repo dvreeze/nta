@@ -38,13 +38,11 @@ import eu.cdevreeze.nta.ntarule.NtaRuleConfigWrapper
  *
  * @author Chris de Vreeze
  */
-final class Validator_2_02_00_10 extends TaxonomyDocumentValidator {
+final class Validator_2_02_00_10(val excludedDocumentUris: Set[URI]) extends TaxonomyDocumentValidator {
 
   import Validator_2_02_00_10._
 
   def ruleName: String = NtaRules.extractRuleName(getClass)
-
-  def excludedDocumentUris: Set[URI] = Set() // TODO
 
   def validateDocument(
     doc: TaxonomyDocument,
@@ -86,8 +84,13 @@ object Validator_2_02_00_10 extends TaxonomyValidatorFactory {
 
   type CfgWrapper = NtaRuleConfigWrapper
 
+  def ruleName: String = {
+    NtaRules.extractRuleName(classOf[Validator_2_02_00_10])
+  }
+
   def create(configWrapper: NtaRuleConfigWrapper): Validator_2_02_00_10 = {
-    new Validator_2_02_00_10
+    new Validator_2_02_00_10(
+      configWrapper.excludedDocumentUrisForRule(ruleName))
   }
 
   private val BlockDefaultEName = EName("blockDefault")

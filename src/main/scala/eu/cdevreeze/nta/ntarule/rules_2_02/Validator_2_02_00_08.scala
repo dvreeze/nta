@@ -36,11 +36,9 @@ import eu.cdevreeze.tqa.base.dom.XsdSchema
  *
  * @author Chris de Vreeze
  */
-final class Validator_2_02_00_08 extends TaxonomyDocumentValidator {
+final class Validator_2_02_00_08(val excludedDocumentUris: Set[URI]) extends TaxonomyDocumentValidator {
 
   def ruleName: String = NtaRules.extractRuleName(getClass)
-
-  def excludedDocumentUris: Set[URI] = Set() // TODO
 
   def validateDocument(
     doc: TaxonomyDocument,
@@ -70,7 +68,12 @@ object Validator_2_02_00_08 extends TaxonomyValidatorFactory {
 
   type CfgWrapper = NtaRuleConfigWrapper
 
+  def ruleName: String = {
+    NtaRules.extractRuleName(classOf[Validator_2_02_00_08])
+  }
+
   def create(configWrapper: NtaRuleConfigWrapper): Validator_2_02_00_08 = {
-    new Validator_2_02_00_08
+    new Validator_2_02_00_08(
+      configWrapper.excludedDocumentUrisForRule(ruleName))
   }
 }

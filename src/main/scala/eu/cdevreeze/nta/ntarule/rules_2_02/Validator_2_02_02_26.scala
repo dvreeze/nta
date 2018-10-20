@@ -35,11 +35,11 @@ import eu.cdevreeze.yaidom.core.EName
  *
  * @author Chris de Vreeze
  */
-final class Validator_2_02_02_26(val localLanguageCode: String) extends DtsSetValidator {
+final class Validator_2_02_02_26(
+  val excludedEntrypointDocumentUris: Set[URI],
+  val localLanguageCode: String) extends DtsSetValidator {
 
   def ruleName: String = NtaRules.extractRuleName(getClass)
-
-  def excludedEntrypointDocumentUris: Set[URI] = Set() // TODO
 
   def validateDtsSet(
     entrypoints: Set[Set[URI]],
@@ -79,7 +79,13 @@ object Validator_2_02_02_26 extends TaxonomyValidatorFactory {
 
   type CfgWrapper = NtaRuleConfigWrapper
 
+  def ruleName: String = {
+    NtaRules.extractRuleName(classOf[Validator_2_02_02_26])
+  }
+
   def create(configWrapper: NtaRuleConfigWrapper): Validator_2_02_02_26 = {
-    new Validator_2_02_02_26(configWrapper.localLanguageCode)
+    new Validator_2_02_02_26(
+      configWrapper.excludedEntrypointDocumentUrisForRule(ruleName),
+      configWrapper.localLanguageCode)
   }
 }
