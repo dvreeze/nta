@@ -5,36 +5,24 @@ organization := "eu.cdevreeze.nta"
 
 version := "0.1.0-SNAPSHOT"
 
-scalaVersion := "2.12.5"
+scalaVersion := "2.12.7"
 
-crossScalaVersions := Seq("2.12.5", "2.11.12")
+crossScalaVersions := Seq("2.12.7", "2.11.12")
 
 // See: Toward a safer Scala
 // http://downloads.typesafe.com/website/presentations/ScalaDaysSF2015/Toward%20a%20Safer%20Scala%20@%20Scala%20Days%20SF%202015.pdf
 
-scalacOptions ++= Seq("-unchecked", "-deprecation", "-feature", "-Xfatal-warnings", "-Xlint")
+scalacOptions ++= Seq("-unchecked", "-deprecation", "-feature", "-Xfatal-warnings", "-Xlint", "-target:jvm-1.8")
 
-libraryDependencies += "eu.cdevreeze.tqa" %% "tqa" % "0.8.0"
+libraryDependencies += "com.typesafe" % "config" % "1.3.2"
 
-libraryDependencies += "eu.cdevreeze.yaidom" %% "yaidom" % "1.8.0"
-
-libraryDependencies += "net.sf.saxon" % "Saxon-HE" % "9.8.0-10"
+libraryDependencies += "eu.cdevreeze.tqa" %% "tqa" % "0.8.6"
 
 libraryDependencies += "org.scalactic" %% "scalactic" % "3.0.5"
-
-libraryDependencies += "junit" % "junit" % "4.12" % "test"
 
 libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.5" % "test"
 
 libraryDependencies += "org.scalacheck" %% "scalacheck" % "1.13.5" % "test"
-
-libraryDependencies += ("joda-time" % "joda-time" % "2.9.5" % "test").intransitive()
-
-libraryDependencies += ("org.joda" % "joda-convert" % "1.8.1" % "test").intransitive()
-
-libraryDependencies += "com.google.guava" % "guava" % "20.0" % "test"
-
-libraryDependencies += "com.google.code.findbugs" % "jsr305" % "3.0.1" % "test"
 
 
 // resolvers += "Artima Maven Repository" at "http://repo.artima.com/releases"

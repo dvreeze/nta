@@ -57,7 +57,6 @@ object ValidatorRunner {
   private val languageCode = System.getProperty("localLanguageCode", "nl")
 
   private def ruleValidatorMap(entrypoints: Set[URI]): Map[String, SubTaxonomyValidator] = {
-    // TODO Type class for enriching BackingElemApi instead of function getCommentChildren below.
     Map(
       "2.2.0.05" -> new Validator_2_2_0_05,
       "2.2.0.06" -> new Validator_2_2_0_06,
