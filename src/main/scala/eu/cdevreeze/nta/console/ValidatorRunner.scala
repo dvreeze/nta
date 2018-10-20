@@ -60,6 +60,8 @@ object ValidatorRunner {
       Validator_2_02_00_08,
       Validator_2_02_00_09,
       Validator_2_02_00_10,
+      Validator_2_02_00_18,
+      Validator_2_02_00_19,
       Validator_2_02_00_23,
       Validator_2_02_00_28,
       Validator_2_02_02_26).groupBy(_.ruleName).mapValues(_.head)
