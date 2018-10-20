@@ -19,6 +19,7 @@ package eu.cdevreeze.nta.common.taxonomy
 import java.net.URI
 
 import eu.cdevreeze.tqa.base.dom.TaxonomyDocument
+import eu.cdevreeze.tqa.base.dom.XsdSchema
 import eu.cdevreeze.tqa.base.taxonomy.BasicTaxonomy
 import eu.cdevreeze.tqa.base.taxonomybuilder.DocumentCollector
 import eu.cdevreeze.tqa.docbuilder.DocumentBuilder
@@ -40,8 +41,12 @@ final class Taxonomy private (
 
   assert(dtsMap.forall { case (ep, taxo) => ep.subsetOf(taxo.taxonomyBase.taxonomyDocUriMap.keySet) })
 
-  assert(dtsMap.values.forall(taxo =>
-    taxo.taxonomyBase.taxonomyDocUriMap.keySet.subsetOf(universeTaxonomy.taxonomyBase.taxonomyDocUriMap.keySet)))
+  assert(dtsMap.values.forall(dts =>
+    dts.taxonomyBase.taxonomyDocUriMap.keySet.subsetOf(universeTaxonomy.taxonomyBase.taxonomyDocUriMap.keySet)))
+
+  def findAllDocumentUris: Set[URI] = {
+    universeTaxonomy.taxonomyBase.taxonomyDocUriMap.keySet
+  }
 
   def findDts(entrypoint: Set[URI]): Option[BasicTaxonomy] = {
     dtsMap.get(entrypoint)
@@ -57,6 +62,21 @@ final class Taxonomy private (
 
   def getDocument(uri: URI): TaxonomyDocument = {
     findDocument(uri).getOrElse(sys.error(s"No document found with URI '$uri'"))
+  }
+
+  def isEntrypointDocument(doc: TaxonomyDocument): Boolean = {
+    dtsMap.keySet.exists(_.contains(doc.uri))
+  }
+
+  def isEntrypointSchemaDocument(doc: TaxonomyDocument): Boolean = {
+    doc.documentElement.isInstanceOf[XsdSchema] && isEntrypointDocument(doc)
+  }
+
+  def filterEntrypointsReturningCombinedDtsAsUriSet(p: Set[URI] => Boolean): Set[URI] = {
+    dtsMap.filterKeys(p)
+      .values.flatMap { dts =>
+        dts.taxonomyBase.taxonomyDocUriMap.keySet
+      }.toSet
   }
 }
 

@@ -16,8 +16,6 @@
 
 package eu.cdevreeze.nta.common.validator
 
-import java.net.URI
-
 import scala.collection.immutable
 
 import eu.cdevreeze.nta.common.taxonomy.Taxonomy
@@ -28,16 +26,23 @@ import eu.cdevreeze.nta.common.taxonomy.Taxonomy
  * "Pre-validators" such as those that fend off XML security attacks or that check for BOM characters cannot
  * be implemented (naturally) with this contract.
  *
+ * Note that due to the notion of a validation scope, this contract also works for ad-hoc extension taxonomies,
+ * where only the extension part of the taxonomy should be validated.
+ *
  * @author Chris de Vreeze
  */
 trait TaxonomyValidator {
 
   /**
-   * Validates the given taxonomy, but restricted to the given validation scope.
-   * It depends on the kind of validator how the validation scope is really used.
-   *
-   * The validation scope makes it possible to have a closed taxonomy including the www.xbrl.org files and
-   * www.w3.org files, but validating only taxonomy documents outside those sets of files.
+   * Returns the unique rule name, such as "2.02.00.05".
    */
-  def validate(validationScope: Set[URI], taxonomy: Taxonomy): immutable.IndexedSeq[Result]
+  def ruleName: String
+
+  /**
+   * Validates the given taxonomy, but restricted to the given validation scope.
+   *
+   * It depends on the kind of validator how the validation scope is used precisely, but in general it should be
+   * respected by validators.
+   */
+  def validate(validationScope: ValidationScope, taxonomy: Taxonomy): immutable.IndexedSeq[Result]
 }

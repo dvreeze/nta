@@ -16,45 +16,50 @@
 
 package eu.cdevreeze.nta.ntarule.rules_2_02
 
+import java.net.URI
+
 import scala.collection.immutable
 
-import com.typesafe.config.Config
-
 import eu.cdevreeze.nta.common.taxonomy.Taxonomy
-import eu.cdevreeze.nta.common.validator.Level
 import eu.cdevreeze.nta.common.validator.Result
 import eu.cdevreeze.nta.common.validator.TaxonomyDocumentValidator
 import eu.cdevreeze.nta.common.validator.TaxonomyValidatorFactory
+import eu.cdevreeze.nta.common.validator.ValidationScope
+import eu.cdevreeze.nta.ntarule.NtaRuleConfigWrapper
+import eu.cdevreeze.nta.ntarule.NtaRules
 import eu.cdevreeze.tqa.ENames
 import eu.cdevreeze.tqa.base.dom.TaxonomyDocument
-import eu.cdevreeze.tqa.base.dom.XsdSchema
 
 /**
- * Validator of rule 2.2.0.23. The rule says that an entrypoint schema must have an id attribute.
+ * Validator of rule 2.02.00.23. The rule says that an entrypoint schema must have an id attribute.
  *
  * @author Chris de Vreeze
  */
 final class Validator_2_02_00_23 extends TaxonomyDocumentValidator {
 
-  def validateDocument(doc: TaxonomyDocument, taxonomy: Taxonomy): immutable.IndexedSeq[Result] = {
+  def ruleName: String = NtaRules.extractRuleName(getClass)
+
+  def excludedDocumentUris: Set[URI] = Set() // TODO
+
+  def validateDocument(
+    doc: TaxonomyDocument,
+    validationScope: ValidationScope,
+    taxonomy: Taxonomy): immutable.IndexedSeq[Result] = {
+
     require(acceptForValidation(doc, taxonomy), s"Document ${doc.uri} should not be validated")
 
     if (doc.documentElement.attributeOption(ENames.IdEName).isDefined) {
       immutable.IndexedSeq()
     } else {
-      immutable.IndexedSeq(Result(
-        "2.02.00.23",
-        Level.Error,
+      immutable.IndexedSeq(Result.makeErrorResult(
+        ruleName,
+        "missing-id",
         s"Id attribute required on entrypoint schema but found none in '${doc.uri}'"))
     }
   }
 
   def acceptForValidation(doc: TaxonomyDocument, taxonomy: Taxonomy): Boolean = {
-    isEntrypointSchema(doc, taxonomy)
-  }
-
-  private def isEntrypointSchema(doc: TaxonomyDocument, taxonomy: Taxonomy): Boolean = {
-    doc.documentElement.isInstanceOf[XsdSchema] && taxonomy.dtsMap.keySet.exists(_.contains(doc.uri))
+    taxonomy.isEntrypointSchemaDocument(doc)
   }
 }
 
@@ -62,7 +67,9 @@ object Validator_2_02_00_23 extends TaxonomyValidatorFactory {
 
   type Validator = Validator_2_02_00_23
 
-  def create(config: Config): Validator_2_02_00_23 = {
+  type CfgWrapper = NtaRuleConfigWrapper
+
+  def create(configWrapper: NtaRuleConfigWrapper): Validator_2_02_00_23 = {
     new Validator_2_02_00_23
   }
 }

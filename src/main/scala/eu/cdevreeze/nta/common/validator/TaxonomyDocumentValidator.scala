@@ -24,29 +24,45 @@ import eu.cdevreeze.nta.common.taxonomy.Taxonomy
 import eu.cdevreeze.tqa.base.dom.TaxonomyDocument
 
 /**
- * Taxonomy document validator contract.
+ * Taxonomy document validator contract. The validate method uses the validation scope, calls method
+ * acceptForValidation, and uses the excluded document URIs in order to determine which method calls to
+ * method validateDocument must be done.
  *
  * @author Chris de Vreeze
  */
 trait TaxonomyDocumentValidator extends TaxonomyValidator {
 
   /**
-   * Validates one taxonomy document. For each (accepted) document URI in the validation scope, the validator will
-   * call this method once.
+   * Returns the URIs of documents that are excluded from validation, although they may match the validation scope
+   * and they may be accepted for validation.
    */
-  def validateDocument(doc: TaxonomyDocument, taxonomy: Taxonomy): immutable.IndexedSeq[Result]
+  def excludedDocumentUris: Set[URI]
 
   /**
-   * Returns true if the given document must be validated. This has nothing to do with filtering of taxonomy
+   * Validates one taxonomy document. For each (non-excluded and accepted) document URI in the validation scope,
+   * the validator will call this method once. It is the responsibility of the implementer of this method to honor
+   * the validation scope as well!
+   */
+  def validateDocument(
+    doc: TaxonomyDocument,
+    validationScope: ValidationScope,
+    taxonomy: Taxonomy): immutable.IndexedSeq[Result]
+
+  /**
+   * Returns true if the given document must be validated. This has nothing to do with exclusion filters of taxonomy
    * documents, but is used to apply the validation only to the documents of the right "type". For example,
-   * schema document validators should only accept schema documents, and not linkbase documents.
+   * schema document validators should only accept schema documents, and not linkbase documents. As another
+   * example, entrypoint schema document validators should only accept entrypoint schema documents, and nothing
+   * else.
    */
   def acceptForValidation(doc: TaxonomyDocument, taxonomy: Taxonomy): Boolean
 
-  final def validate(validationScope: Set[URI], taxonomy: Taxonomy): immutable.IndexedSeq[Result] = {
-    validationScope.toIndexedSeq
+  final def validate(validationScope: ValidationScope, taxonomy: Taxonomy): immutable.IndexedSeq[Result] = {
+    taxonomy.findAllDocumentUris.toIndexedSeq
+      .filter(uri => validationScope.matches(uri))
+      .filterNot(excludedDocumentUris)
       .map(uri => taxonomy.getDocument(uri))
       .filter(doc => acceptForValidation(doc, taxonomy))
-      .flatMap(doc => validateDocument(doc, taxonomy))
+      .flatMap(doc => validateDocument(doc, validationScope, taxonomy))
   }
 }

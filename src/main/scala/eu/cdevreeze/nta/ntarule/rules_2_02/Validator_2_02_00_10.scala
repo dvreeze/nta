@@ -25,17 +25,22 @@ import eu.cdevreeze.nta.common.validator.Result
 import eu.cdevreeze.nta.common.validator.TaxonomyDocumentValidator
 import eu.cdevreeze.nta.common.validator.TaxonomyValidatorFactory
 import eu.cdevreeze.nta.common.validator.ValidationScope
-import eu.cdevreeze.nta.ntarule.NtaRuleConfigWrapper
 import eu.cdevreeze.nta.ntarule.NtaRules
 import eu.cdevreeze.tqa.base.dom.TaxonomyDocument
 import eu.cdevreeze.tqa.base.dom.XsdSchema
+import eu.cdevreeze.yaidom.core.EName
+import eu.cdevreeze.nta.ntarule.NtaRuleConfigWrapper
+import eu.cdevreeze.nta.ntarule.NtaRuleConfigWrapper
 
 /**
- * Validator of rule 2.02.00.06. The rule says that there must be only prefixed element nodes in the schema document.
+ * Validator of rule 2.02.00.10. The rule says that the the schema document must not have blockDefault, finalDefault and
+ * version attributes.
  *
  * @author Chris de Vreeze
  */
-final class Validator_2_02_00_06 extends TaxonomyDocumentValidator {
+final class Validator_2_02_00_10 extends TaxonomyDocumentValidator {
+
+  import Validator_2_02_00_10._
 
   def ruleName: String = NtaRules.extractRuleName(getClass)
 
@@ -48,17 +53,26 @@ final class Validator_2_02_00_06 extends TaxonomyDocumentValidator {
 
     require(acceptForValidation(doc, taxonomy), s"Document ${doc.uri} should not be validated")
 
-    // This is a query on XML level, which is easy to implement using yaidom
-    val unprefixedElems = doc.documentElement.filterElemsOrSelf(_.qname.prefixOption.isEmpty)
+    val blockDefaultOption = doc.documentElement.attributeOption(BlockDefaultEName)
+    val finalDefaultOption = doc.documentElement.attributeOption(FinalDefaultEName)
+    val versionOption = doc.documentElement.attributeOption(VersionEName)
 
-    if (unprefixedElems.isEmpty) {
-      immutable.IndexedSeq()
-    } else {
-      immutable.IndexedSeq(Result.makeErrorResult(
-        ruleName,
-        "unprefixed-elements",
-        s"No unprefixed elements allowed but found ${unprefixedElems.size} such elements in '${doc.uri}'"))
-    }
+    val blockDefaultErrors = blockDefaultOption.toIndexedSeq.map(_ => Result.makeErrorResult(
+      ruleName,
+      "block-default-not-allowed",
+      s"Attribute blockDefault not allowed in '${doc.uri}'"))
+
+    val finalDefaultErrors = finalDefaultOption.toIndexedSeq.map(_ => Result.makeErrorResult(
+      ruleName,
+      "final-default-not-allowed",
+      s"Attribute finalDefault not allowed in '${doc.uri}'"))
+
+    val versionErrors = versionOption.toIndexedSeq.map(_ => Result.makeErrorResult(
+      ruleName,
+      "version-not-allowed",
+      s"Attribute version not allowed in '${doc.uri}'"))
+
+    blockDefaultErrors ++ finalDefaultErrors ++ versionErrors
   }
 
   def acceptForValidation(doc: TaxonomyDocument, taxonomy: Taxonomy): Boolean = {
@@ -66,13 +80,17 @@ final class Validator_2_02_00_06 extends TaxonomyDocumentValidator {
   }
 }
 
-object Validator_2_02_00_06 extends TaxonomyValidatorFactory {
+object Validator_2_02_00_10 extends TaxonomyValidatorFactory {
 
-  type Validator = Validator_2_02_00_06
+  type Validator = Validator_2_02_00_10
 
   type CfgWrapper = NtaRuleConfigWrapper
 
-  def create(configWrapper: NtaRuleConfigWrapper): Validator_2_02_00_06 = {
-    new Validator_2_02_00_06
+  def create(configWrapper: NtaRuleConfigWrapper): Validator_2_02_00_10 = {
+    new Validator_2_02_00_10
   }
+
+  private val BlockDefaultEName = EName("blockDefault")
+  private val FinalDefaultEName = EName("finalDefault")
+  private val VersionEName = EName("version")
 }

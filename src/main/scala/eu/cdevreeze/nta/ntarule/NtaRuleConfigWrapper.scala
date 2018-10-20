@@ -29,7 +29,8 @@ final class NtaRuleConfigWrapper(val underlyingConfig: Config) extends ConfigWra
   checkConfig(underlyingConfig)
 
   def localLanguageCode: String = {
-    ???
+    // TODO
+    "nl"
   }
 
   private def checkConfig(config: Config): Unit = {

@@ -19,8 +19,23 @@ package eu.cdevreeze.nta.common.validator
 /**
  * Individual validation result.
  *
- * TODO Improve, especially the message
+ * TODO Improve, especially the message.
  *
  * @author Chris de Vreeze
  */
-final case class Result(code: String, level: Level, message: String)
+final case class Result(ruleName: String, code: String, level: Level, message: String)
+
+object Result {
+
+  def makeErrorResult(ruleName: String, code: String, message: String): Result = {
+    apply(ruleName, code, Level.Error, message)
+  }
+
+  def makeWarningResult(ruleName: String, code: String, message: String): Result = {
+    apply(ruleName, code, Level.Warning, message)
+  }
+
+  def makeOkResult(ruleName: String, code: String, message: String): Result = {
+    apply(ruleName, code, Level.Ok, message)
+  }
+}

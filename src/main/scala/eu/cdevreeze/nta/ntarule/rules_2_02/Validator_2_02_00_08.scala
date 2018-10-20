@@ -16,35 +16,45 @@
 
 package eu.cdevreeze.nta.ntarule.rules_2_02
 
+import java.net.URI
+
 import scala.collection.immutable
 
-import com.typesafe.config.Config
-
 import eu.cdevreeze.nta.common.taxonomy.Taxonomy
-import eu.cdevreeze.nta.common.validator.Level
 import eu.cdevreeze.nta.common.validator.Result
 import eu.cdevreeze.nta.common.validator.TaxonomyDocumentValidator
 import eu.cdevreeze.nta.common.validator.TaxonomyValidatorFactory
+import eu.cdevreeze.nta.common.validator.ValidationScope
+import eu.cdevreeze.nta.ntarule.NtaRuleConfigWrapper
+import eu.cdevreeze.nta.ntarule.NtaRules
 import eu.cdevreeze.tqa.ENames
 import eu.cdevreeze.tqa.base.dom.TaxonomyDocument
 import eu.cdevreeze.tqa.base.dom.XsdSchema
 
 /**
- * Validator of rule 2.2.0.08. The rule says that the schema document must have a @targetNamespace attribute.
+ * Validator of rule 2.02.00.08. The rule says that the schema document must have a @targetNamespace attribute.
  *
  * @author Chris de Vreeze
  */
 final class Validator_2_02_00_08 extends TaxonomyDocumentValidator {
 
-  def validateDocument(doc: TaxonomyDocument, taxonomy: Taxonomy): immutable.IndexedSeq[Result] = {
+  def ruleName: String = NtaRules.extractRuleName(getClass)
+
+  def excludedDocumentUris: Set[URI] = Set() // TODO
+
+  def validateDocument(
+    doc: TaxonomyDocument,
+    validationScope: ValidationScope,
+    taxonomy: Taxonomy): immutable.IndexedSeq[Result] = {
+
     require(acceptForValidation(doc, taxonomy), s"Document ${doc.uri} should not be validated")
 
     if (doc.documentElement.attributeOption(ENames.TargetNamespaceEName).isDefined) {
       immutable.IndexedSeq()
     } else {
-      immutable.IndexedSeq(Result(
-        "2.02.00.08",
-        Level.Error,
+      immutable.IndexedSeq(Result.makeErrorResult(
+        ruleName,
+        "no-target-namespace",
         s"Target namespace attribute required but found none in '${doc.uri}'"))
     }
   }
@@ -58,7 +68,9 @@ object Validator_2_02_00_08 extends TaxonomyValidatorFactory {
 
   type Validator = Validator_2_02_00_08
 
-  def create(config: Config): Validator_2_02_00_08 = {
+  type CfgWrapper = NtaRuleConfigWrapper
+
+  def create(configWrapper: NtaRuleConfigWrapper): Validator_2_02_00_08 = {
     new Validator_2_02_00_08
   }
 }

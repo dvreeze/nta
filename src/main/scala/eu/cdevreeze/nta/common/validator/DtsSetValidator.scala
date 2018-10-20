@@ -23,12 +23,11 @@ import scala.collection.immutable
 import eu.cdevreeze.nta.common.taxonomy.Taxonomy
 
 /**
- * DTS validator contract. The validate method uses the validation scope and the excluded entrypoint document URIs
- * in order to determine which method calls to method validateDts must be done.
+ * DTS set validator contract.
  *
  * @author Chris de Vreeze
  */
-trait DtsValidator extends TaxonomyValidator {
+trait DtsSetValidator extends TaxonomyValidator {
 
   /**
    * Returns the URIs of entrypoint documents that are excluded from validation, although they may match the
@@ -37,20 +36,26 @@ trait DtsValidator extends TaxonomyValidator {
   def excludedEntrypointDocumentUris: Set[URI]
 
   /**
-   * Validates one DTS. For each (non-excluded) entrypoint (entirely) in the validation scope, this method is
-   * called once. It is the responsibility of the implementer of this method to honor the validation scope as well!
+   * Validates the combined DTS set. This method is called only once by the validate method. The passed "combined
+   * entrypoint" is the set of all entrypoints, minus partially or wholly excluded entrypoints and minus
+   * entrypoints not matching the validation scope. It is the responsibility of the implementer of this method
+   * to honor the validation scope as well!
    *
-   * In the implementation of this method, use method `Taxonomy.getDts` to get the DTS for the given entrypoint.
+   * In the implementation of this method, use method `Taxonomy.filterEntrypointsReturningCombinedDtsAsUriSet`
+   * to get the "combined DTS" for the given combined entrypoints.
    */
-  def validateDts(
-    entrypoint: Set[URI],
+  def validateDtsSet(
+    entrypoints: Set[Set[URI]],
     validationScope: ValidationScope,
     taxonomy: Taxonomy): immutable.IndexedSeq[Result]
 
   final def validate(validationScope: ValidationScope, taxonomy: Taxonomy): immutable.IndexedSeq[Result] = {
-    taxonomy.dtsMap.keySet.toIndexedSeq
-      .filter(ep => ep.forall(uri => validationScope.matches(uri)))
-      .filter(ep => ep.intersect(excludedEntrypointDocumentUris).isEmpty)
-      .flatMap(ep => validateDts(ep, validationScope, taxonomy))
+    val entrypoints: Set[Set[URI]] =
+      taxonomy.dtsMap.keySet.toIndexedSeq
+        .filter(ep => ep.forall(uri => validationScope.matches(uri)))
+        .filter(ep => ep.intersect(excludedEntrypointDocumentUris).isEmpty)
+        .toSet
+
+    validateDtsSet(entrypoints, validationScope, taxonomy)
   }
 }

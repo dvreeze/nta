@@ -16,7 +16,7 @@
 
 package eu.cdevreeze.nta.common.validator
 
-import com.typesafe.config.Config
+import eu.cdevreeze.nta.common.config.ConfigWrapper
 
 /**
  * Factory of a taxonomy validator.
@@ -27,10 +27,15 @@ trait TaxonomyValidatorFactory {
 
   type Validator <: TaxonomyValidator
 
-  def create(config: Config): Validator
+  type CfgWrapper <: ConfigWrapper
+
+  def create(configWrapper: CfgWrapper): Validator
 }
 
 object TaxonomyValidatorFactory {
 
-  type Aux[V] = TaxonomyValidatorFactory { type Validator = V }
+  type Aux[V, C] = TaxonomyValidatorFactory {
+    type Validator = V
+    type CfgWrapper = C
+  }
 }
