@@ -25,7 +25,7 @@ import eu.cdevreeze.nta.common.config.ConfigWrapperFactory
  *
  * @author Chris de Vreeze
  */
-final class NtaRuleConfigWrapperFactory extends ConfigWrapperFactory {
+object NtaRuleConfigWrapperFactory extends ConfigWrapperFactory {
 
   type CfgWrapper = NtaRuleConfigWrapper
 

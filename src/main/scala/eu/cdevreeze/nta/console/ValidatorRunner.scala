@@ -22,18 +22,18 @@ import java.util.logging.Logger
 
 import scala.collection.immutable
 
-import org.scalactic.Accumulation.convertGenTraversableOnceToCombinable
-import org.scalactic.Every
-import org.scalactic.Or
-import eu.cdevreeze.nta.rule._
-import eu.cdevreeze.nta.taxo.SubTaxonomy
-import eu.cdevreeze.nta.validator.DtsValidator
-import eu.cdevreeze.nta.validator.SubTaxonomyValidator
-import eu.cdevreeze.nta.validator.ValidationError
-import eu.cdevreeze.nta.validator.ValidationErrorOrWarning
-import eu.cdevreeze.nta.validator.ValidationWarning
+import com.typesafe.config.ConfigFactory
+
+import eu.cdevreeze.nta.common.taxonomy.Taxonomy
+import eu.cdevreeze.nta.common.validator.Level
+import eu.cdevreeze.nta.common.validator.Result
+import eu.cdevreeze.nta.common.validator.TaxonomyValidator
+import eu.cdevreeze.nta.common.validator.TaxonomyValidatorFactory
+import eu.cdevreeze.nta.common.validator.ValidationScope
+import eu.cdevreeze.nta.ntarule.NtaRuleConfigWrapper
+import eu.cdevreeze.nta.ntarule.NtaRuleConfigWrapperFactory
+import eu.cdevreeze.nta.ntarule.rules_2_02._
 import eu.cdevreeze.tqa.base.relationship.DefaultRelationshipFactory
-import eu.cdevreeze.tqa.base.taxonomy.BasicTaxonomy
 import eu.cdevreeze.tqa.base.taxonomybuilder.DefaultDtsCollector
 import eu.cdevreeze.tqa.base.taxonomybuilder.DocumentCollector
 import eu.cdevreeze.tqa.base.taxonomybuilder.TaxonomyBuilder
@@ -42,7 +42,6 @@ import eu.cdevreeze.tqa.docbuilder.indexed.IndexedDocumentBuilder
 import eu.cdevreeze.tqa.docbuilder.jvm.UriResolvers
 import eu.cdevreeze.tqa.docbuilder.saxon.SaxonDocumentBuilder
 import eu.cdevreeze.yaidom.parse.DocumentParserUsingStax
-import eu.cdevreeze.yaidom.queryapi.BackingDocumentApi
 import net.sf.saxon.s9api.Processor
 
 /**
@@ -54,34 +53,19 @@ object ValidatorRunner {
 
   private val logger = Logger.getGlobal
 
-  private val languageCode = System.getProperty("localLanguageCode", "nl")
-
-  private def ruleValidatorMap(entrypoints: Set[URI]): Map[String, SubTaxonomyValidator] = {
-    Map(
-      "2.2.0.05" -> new Validator_2_2_0_05,
-      "2.2.0.06" -> new Validator_2_2_0_06,
-      "2.2.0.08" -> new Validator_2_2_0_08,
-      "2.2.0.09" -> new Validator_2_2_0_09,
-      "2.2.0.10" -> new Validator_2_2_0_10,
-      "2.2.0.11" -> new Validator_2_2_0_11,
-      "2.2.0.12" -> new Validator_2_2_0_12,
-      "2.2.0.14" -> new Validator_2_2_0_14,
-      "2.2.0.18" -> new Validator_2_2_0_18,
-      "2.2.0.19" -> new Validator_2_2_0_19,
-      "2.2.0.22" -> new Validator_2_2_0_22,
-      "2.2.0.23" -> new Validator_2_2_0_23(entrypoints),
-      "2.2.0.27" -> new Validator_2_2_0_27,
-      "2.2.1.02" -> new Validator_2_2_1_02,
-      "2.2.2.26" -> new Validator_2_2_2_26(languageCode))
-  }
-
-  private val dtsRuleValidatorMap: Map[String, DtsValidator] = {
-    Map(
-      "2.2.0.28" -> new Validator_2_2_0_28)
-  }
+  private val validatorFactoryMap: Map[String, TaxonomyValidatorFactory.Aux[_, NtaRuleConfigWrapper]] =
+    List[TaxonomyValidatorFactory.Aux[_, NtaRuleConfigWrapper]](
+      Validator_2_02_00_05,
+      Validator_2_02_00_06,
+      Validator_2_02_00_08,
+      Validator_2_02_00_09,
+      Validator_2_02_00_10,
+      Validator_2_02_00_23,
+      Validator_2_02_00_28,
+      Validator_2_02_02_26).groupBy(_.ruleName).mapValues(_.head)
 
   def main(args: Array[String]): Unit = {
-    require(args.size >= 3, s"Usage: ValidatorRunner <taxo root dir> <sub-taxo document URI start> <entrypoint URI> ...")
+    require(args.size >= 3, s"Usage: ValidatorRunner <taxo root dir> <document URI start (validation scope)> <entrypoint URI> ...")
     val rootDir = new File(args(0))
     require(rootDir.isDirectory, s"Not a directory: $rootDir")
 
@@ -108,39 +92,32 @@ object ValidatorRunner {
 
     val basicTaxo = taxoBuilder.build(entrypointUris)
 
-    val subTaxo = new SubTaxonomy(basicTaxo, (uri => uri.toString.startsWith(documentUriStart.toString)))
+    val taxonomy = Taxonomy.build(basicTaxo, documentCollector, entrypointUris.map(u => Set(u)))
+
+    val validationScope = new ValidationScope(Set(documentUriStart.toString))
+
+    logger.info(s"Creating the validators ...")
+
+    val config = ConfigFactory.defaultApplication()
+    val configWrapper: NtaRuleConfigWrapper = NtaRuleConfigWrapperFactory.create(config)
+
+    val validators: immutable.IndexedSeq[TaxonomyValidator] =
+      validatorFactoryMap.values.toIndexedSeq
+        .map(factory => factory.create(configWrapper).asInstanceOf[TaxonomyValidator])
+        .sortBy(_.ruleName)
 
     logger.info("Starting rule validation ...")
 
-    val normalValidationResult: Unit Or Every[ValidationErrorOrWarning] =
-      (ruleValidatorMap(entrypointUris).values.toIndexedSeq.sortBy(_.getClass.getSimpleName) map { validator =>
-        logger.info(s"Running validator ${validator.getClass.getSimpleName}")
-        validator.validate(subTaxo)
-      }).combined.map(good => ())
+    val validationResults: immutable.IndexedSeq[Result] = validators.flatMap { validator =>
+      logger.info(s"Running validator for rule ${validator.ruleName}")
 
-    logger.info(s"Validation result for regular rules is OK: ${normalValidationResult.isGood}")
-
-    val dtsValidationResult: Unit Or Every[ValidationErrorOrWarning] = {
-      (dtsRuleValidatorMap.values.toIndexedSeq.sortBy(_.getClass.getSimpleName) flatMap { validator =>
-        entrypointUris.toSeq.sortBy(_.toString) map { entrypointUri =>
-          val dts = getDts(entrypointUri, basicTaxo, lenient)
-
-          logger.info(s"Running DTS validator ${validator.getClass.getSimpleName} for entrypoint ${entrypointUri}")
-          validator.validate(dts)
-        }
-      }).combined.map(good => ())
+      validator.validate(validationScope, taxonomy)
     }
 
-    logger.info(s"Validation result for DTS rules is OK: ${dtsValidationResult.isGood}")
+    logger.info(s"Validation result is OK: ${validationResults.filterNot(_.level == Level.Ok).isEmpty}")
 
-    val validationResult: Unit Or Every[ValidationErrorOrWarning] =
-      List(normalValidationResult, dtsValidationResult).combined.map(good => ())
-
-    val errorsAndWarnings: immutable.IndexedSeq[ValidationErrorOrWarning] =
-      validationResult.fold(good => Vector[ValidationErrorOrWarning](), bad => bad.toIndexedSeq)
-
-    val errors = errorsAndWarnings collect { case err: ValidationError => err }
-    val warnings = errorsAndWarnings collect { case warn: ValidationWarning => warn }
+    val errors = validationResults.filter(_.level == Level.Error)
+    val warnings = validationResults.filter(_.level == Level.Warning)
 
     errors foreach { err =>
       logger.severe(err.toString)
@@ -159,31 +136,5 @@ object ValidatorRunner {
     } else {
       new IndexedDocumentBuilder(DocumentParserUsingStax.newInstance(), UriResolvers.fromLocalMirrorRootDirectory(rootDir))
     }
-  }
-
-  private def getDts(entrypointUri: URI, context: BasicTaxonomy, lenient: Boolean): BasicTaxonomy = {
-    // Inefficient to recompute the relationships
-
-    val documentBuilder = new DocumentBuilder {
-
-      type BackingDoc = BackingDocumentApi
-
-      def build(uri: URI): BackingDoc = {
-        context.taxonomyBase.taxonomyDocUriMap.getOrElse(uri, sys.error(s"Missing document $uri")).backingDocument
-      }
-    }
-
-    val documentCollector = DefaultDtsCollector()
-
-    val relationshipFactory =
-      if (lenient) DefaultRelationshipFactory.LenientInstance else DefaultRelationshipFactory.StrictInstance
-
-    val taxoBuilder =
-      TaxonomyBuilder.
-        withDocumentBuilder(documentBuilder).
-        withDocumentCollector(documentCollector).
-        withRelationshipFactory(relationshipFactory)
-
-    taxoBuilder.build(Set(entrypointUri))
   }
 }

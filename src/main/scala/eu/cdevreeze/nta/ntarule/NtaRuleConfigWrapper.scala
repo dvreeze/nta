@@ -31,7 +31,11 @@ import eu.cdevreeze.nta.common.config.ConfigWrapper
  * @author Chris de Vreeze
  */
 final class NtaRuleConfigWrapper(val underlyingConfig: Config) extends ConfigWrapper {
-  underlyingConfig.checkValid(ConfigFactory.defaultReference)
+  underlyingConfig.checkValid(
+    ConfigFactory.defaultReference,
+    "local-language-code",
+    "default-excluded-document-uris",
+    "default-excluded-entrypoint-document-uris")
 
   def localLanguageCode: String = {
     underlyingConfig.getString("local-language-code")
