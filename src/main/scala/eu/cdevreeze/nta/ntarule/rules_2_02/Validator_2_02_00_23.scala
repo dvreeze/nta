@@ -25,42 +25,44 @@ import eu.cdevreeze.nta.common.validator.Level
 import eu.cdevreeze.nta.common.validator.Result
 import eu.cdevreeze.nta.common.validator.TaxonomyDocumentValidator
 import eu.cdevreeze.nta.common.validator.TaxonomyValidatorFactory
+import eu.cdevreeze.tqa.ENames
 import eu.cdevreeze.tqa.base.dom.TaxonomyDocument
 import eu.cdevreeze.tqa.base.dom.XsdSchema
 
 /**
- * Validator of rule 2.2.0.06. The rule says that there must be only prefixed element nodes in the schema document.
+ * Validator of rule 2.2.0.23. The rule says that an entrypoint schema must have an id attribute.
  *
  * @author Chris de Vreeze
  */
-final class Validator_2_02_00_06 extends TaxonomyDocumentValidator {
+final class Validator_2_02_00_23 extends TaxonomyDocumentValidator {
 
   def validateDocument(doc: TaxonomyDocument, taxonomy: Taxonomy): immutable.IndexedSeq[Result] = {
     require(acceptForValidation(doc, taxonomy), s"Document ${doc.uri} should not be validated")
 
-    // This is a query on XML level, which is easy to implement using yaidom
-    val unprefixedElems = doc.documentElement.filterElemsOrSelf(_.qname.prefixOption.isEmpty)
-
-    if (unprefixedElems.isEmpty) {
+    if (doc.documentElement.attributeOption(ENames.IdEName).isDefined) {
       immutable.IndexedSeq()
     } else {
       immutable.IndexedSeq(Result(
-        "2.02.00.06",
+        "2.02.00.23",
         Level.Error,
-        s"No unprefixed elements allowed but found ${unprefixedElems.size} such elements in '${doc.uri}'"))
+        s"Id attribute required on entrypoint schema but found none in '${doc.uri}'"))
     }
   }
 
   def acceptForValidation(doc: TaxonomyDocument, taxonomy: Taxonomy): Boolean = {
-    doc.documentElement.isInstanceOf[XsdSchema]
+    isEntrypointSchema(doc, taxonomy)
+  }
+
+  private def isEntrypointSchema(doc: TaxonomyDocument, taxonomy: Taxonomy): Boolean = {
+    doc.documentElement.isInstanceOf[XsdSchema] && taxonomy.dtsMap.keySet.exists(_.contains(doc.uri))
   }
 }
 
-object Validator_2_02_00_06 extends TaxonomyValidatorFactory {
+object Validator_2_02_00_23 extends TaxonomyValidatorFactory {
 
-  type Validator = Validator_2_02_00_06
+  type Validator = Validator_2_02_00_23
 
-  def create(config: Config): Validator_2_02_00_06 = {
-    new Validator_2_02_00_06
+  def create(config: Config): Validator_2_02_00_23 = {
+    new Validator_2_02_00_23
   }
 }

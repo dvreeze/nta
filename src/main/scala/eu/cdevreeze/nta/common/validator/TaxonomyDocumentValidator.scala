@@ -40,9 +40,6 @@ trait TaxonomyDocumentValidator extends TaxonomyValidator {
    * Returns true if the given document must be validated. This has nothing to do with filtering of taxonomy
    * documents, but is used to apply the validation only to the documents of the right "type". For example,
    * schema document validators should only accept schema documents, and not linkbase documents.
-   *
-   * Without this method, schema document validators would return Ok results for linkbase documents, instead
-   * of just ignoring them.
    */
   def acceptForValidation(doc: TaxonomyDocument, taxonomy: Taxonomy): Boolean
 

@@ -40,6 +40,8 @@ import eu.cdevreeze.tqa.base.dom.XsdSchema
 final class Validator_2_02_00_05 extends TaxonomyDocumentValidator {
 
   def validateDocument(doc: TaxonomyDocument, taxonomy: Taxonomy): immutable.IndexedSeq[Result] = {
+    require(acceptForValidation(doc, taxonomy), s"Document ${doc.uri} should not be validated")
+
     val offendingComments =
       doc.documentElement.findAllElemsOrSelf.flatMap(_.children) collect { case c: TaxonomyCommentNode => c }
 

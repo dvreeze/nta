@@ -37,6 +37,8 @@ import eu.cdevreeze.tqa.base.dom.XsdSchema
 final class Validator_2_02_00_08 extends TaxonomyDocumentValidator {
 
   def validateDocument(doc: TaxonomyDocument, taxonomy: Taxonomy): immutable.IndexedSeq[Result] = {
+    require(acceptForValidation(doc, taxonomy), s"Document ${doc.uri} should not be validated")
+
     if (doc.documentElement.attributeOption(ENames.TargetNamespaceEName).isDefined) {
       immutable.IndexedSeq()
     } else {
