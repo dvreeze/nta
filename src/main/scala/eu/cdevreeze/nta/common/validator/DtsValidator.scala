@@ -37,7 +37,7 @@ trait DtsValidator extends TaxonomyValidator {
 
   final def validate(validationScope: Set[URI], taxonomy: Taxonomy): immutable.IndexedSeq[Result] = {
     taxonomy.dtsMap.keySet.toIndexedSeq
-      .filter(ep => ep.subsetOf(taxonomy.universeTaxonomy.taxonomyBase.taxonomyDocUriMap.keySet))
+      .filter(ep => ep.subsetOf(validationScope))
       .flatMap(ep => validateDts(ep, taxonomy))
   }
 }
