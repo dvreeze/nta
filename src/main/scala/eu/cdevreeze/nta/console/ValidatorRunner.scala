@@ -60,6 +60,7 @@ object ValidatorRunner {
       Validator_2_02_00_08,
       Validator_2_02_00_09,
       Validator_2_02_00_10,
+      Validator_2_02_00_11,
       Validator_2_02_00_12,
       Validator_2_02_00_14,
       Validator_2_02_00_18,
