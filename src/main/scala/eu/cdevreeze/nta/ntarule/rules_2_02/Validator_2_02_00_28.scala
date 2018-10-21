@@ -40,8 +40,8 @@ final class Validator_2_02_00_28(val excludedEntrypointDocumentUris: Set[URI]) e
 
   def validateDts(
     entrypoint: Set[URI],
-    validationScope: ValidationScope,
-    taxonomy: Taxonomy): immutable.IndexedSeq[Result] = {
+    taxonomy: Taxonomy,
+    validationScope: ValidationScope): immutable.IndexedSeq[Result] = {
 
     val dts = taxonomy.getDts(entrypoint)
 

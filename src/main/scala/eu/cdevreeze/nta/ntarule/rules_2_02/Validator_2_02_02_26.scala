@@ -43,8 +43,8 @@ final class Validator_2_02_02_26(
 
   def validateDtsSet(
     entrypoints: Set[Set[URI]],
-    validationScope: ValidationScope,
-    taxonomy: Taxonomy): immutable.IndexedSeq[Result] = {
+    taxonomy: Taxonomy,
+    validationScope: ValidationScope): immutable.IndexedSeq[Result] = {
 
     val combinedDtsUris: Set[URI] = taxonomy.filterEntrypointsReturningCombinedDtsAsUriSet(entrypoints)
 

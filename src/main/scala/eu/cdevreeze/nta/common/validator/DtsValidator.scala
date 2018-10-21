@@ -44,13 +44,13 @@ trait DtsValidator extends TaxonomyValidator {
    */
   def validateDts(
     entrypoint: Set[URI],
-    validationScope: ValidationScope,
-    taxonomy: Taxonomy): immutable.IndexedSeq[Result]
+    taxonomy: Taxonomy,
+    validationScope: ValidationScope): immutable.IndexedSeq[Result]
 
-  final def validate(validationScope: ValidationScope, taxonomy: Taxonomy): immutable.IndexedSeq[Result] = {
+  final def validate(taxonomy: Taxonomy, validationScope: ValidationScope): immutable.IndexedSeq[Result] = {
     taxonomy.dtsMap.keySet.toIndexedSeq
       .filter(ep => ep.forall(uri => validationScope.matches(uri)))
       .filter(ep => ep.intersect(excludedEntrypointDocumentUris).isEmpty)
-      .flatMap(ep => validateDts(ep, validationScope, taxonomy))
+      .flatMap(ep => validateDts(ep, taxonomy, validationScope))
   }
 }

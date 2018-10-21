@@ -45,8 +45,8 @@ trait TaxonomyDocumentValidator extends TaxonomyValidator {
    */
   def validateDocument(
     doc: TaxonomyDocument,
-    validationScope: ValidationScope,
-    taxonomy: Taxonomy): immutable.IndexedSeq[Result]
+    taxonomy: Taxonomy,
+    validationScope: ValidationScope): immutable.IndexedSeq[Result]
 
   /**
    * Returns true if the given document must be validated. This has nothing to do with exclusion filters of taxonomy
@@ -57,12 +57,12 @@ trait TaxonomyDocumentValidator extends TaxonomyValidator {
    */
   def acceptForValidation(doc: TaxonomyDocument, taxonomy: Taxonomy): Boolean
 
-  final def validate(validationScope: ValidationScope, taxonomy: Taxonomy): immutable.IndexedSeq[Result] = {
+  final def validate(taxonomy: Taxonomy, validationScope: ValidationScope): immutable.IndexedSeq[Result] = {
     taxonomy.findAllDocumentUris.toIndexedSeq
       .filter(uri => validationScope.matches(uri))
       .filterNot(excludedDocumentUris)
       .map(uri => taxonomy.getDocument(uri))
       .filter(doc => acceptForValidation(doc, taxonomy))
-      .flatMap(doc => validateDocument(doc, validationScope, taxonomy))
+      .flatMap(doc => validateDocument(doc, taxonomy, validationScope))
   }
 }

@@ -41,8 +41,8 @@ final class Validator_2_02_00_06(val excludedDocumentUris: Set[URI]) extends Tax
 
   def validateDocument(
     doc: TaxonomyDocument,
-    validationScope: ValidationScope,
-    taxonomy: Taxonomy): immutable.IndexedSeq[Result] = {
+    taxonomy: Taxonomy,
+    validationScope: ValidationScope): immutable.IndexedSeq[Result] = {
 
     require(acceptForValidation(doc, taxonomy), s"Document ${doc.uri} should not be validated")
 

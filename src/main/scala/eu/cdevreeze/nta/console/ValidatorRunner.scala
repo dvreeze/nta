@@ -115,7 +115,7 @@ object ValidatorRunner {
     val validationResults: immutable.IndexedSeq[Result] = validators.flatMap { validator =>
       logger.info(s"Running validator for rule ${validator.ruleName}")
 
-      validator.validate(validationScope, taxonomy)
+      validator.validate(taxonomy, validationScope)
     }
 
     logger.info(s"Validation result is OK: ${validationResults.filterNot(_.level == Level.Ok).isEmpty}")

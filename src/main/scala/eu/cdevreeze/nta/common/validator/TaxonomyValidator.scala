@@ -26,8 +26,8 @@ import eu.cdevreeze.nta.common.taxonomy.Taxonomy
  * "Pre-validators" such as those that fend off XML security attacks or that check for BOM characters cannot
  * be implemented (naturally) with this contract.
  *
- * Note that due to the notion of a validation scope, this contract also works for ad-hoc extension taxonomies,
- * where only the extension part of the taxonomy should be validated.
+ * Note that due to the notion of a validation scope, this contract even works for ad-hoc extension taxonomies,
+ * where only the extension part of the taxonomy should be validated (within the context of the entire taxonomy).
  *
  * @author Chris de Vreeze
  */
@@ -44,5 +44,5 @@ trait TaxonomyValidator {
    * It depends on the kind of validator how the validation scope is used precisely, but in general it should be
    * respected by validators.
    */
-  def validate(validationScope: ValidationScope,taxonomy: Taxonomy): immutable.IndexedSeq[Result]
+  def validate(taxonomy: Taxonomy, validationScope: ValidationScope): immutable.IndexedSeq[Result]
 }
