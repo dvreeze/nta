@@ -52,22 +52,30 @@ final class NtaRuleConfigWrapper(val underlyingConfig: Config) extends ConfigWra
   }
 
   def excludedDocumentUrisForRule(ruleName: String): Set[URI] = {
+    excludedDocumentUrisForRule(ruleName, true)
+  }
+
+  def excludedDocumentUrisForRule(ruleName: String, fallbackToDefault: Boolean): Set[URI] = {
     val path = s"$ruleName.excluded-document-uris"
 
     if (underlyingConfig.hasPath(path)) {
       underlyingConfig.getStringList(path).asScala.map(u => URI.create(u)).toSet
     } else {
-      Set.empty
+      if (fallbackToDefault) defaultExcludedDocumentUris else Set.empty
     }
   }
 
   def excludedEntrypointDocumentUrisForRule(ruleName: String): Set[URI] = {
+    excludedEntrypointDocumentUrisForRule(ruleName, true)
+  }
+
+  def excludedEntrypointDocumentUrisForRule(ruleName: String, fallbackToDefault: Boolean): Set[URI] = {
     val path = s"$ruleName.excluded-entrypoint-document-uris"
 
     if (underlyingConfig.hasPath(path)) {
       underlyingConfig.getStringList(path).asScala.map(u => URI.create(u)).toSet
     } else {
-      Set.empty
+      if (fallbackToDefault) defaultExcludedEntrypointDocumentUris else Set.empty
     }
   }
 }
