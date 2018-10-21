@@ -44,7 +44,7 @@ final class Validator_2_02_00_06(val excludedDocumentUris: Set[URI]) extends Tax
     taxonomy: Taxonomy,
     validationScope: ValidationScope): immutable.IndexedSeq[Result] = {
 
-    require(acceptForValidation(doc, taxonomy), s"Document ${doc.uri} should not be validated")
+    require(isTypeOfDocumentToValidate(doc, taxonomy), s"Document ${doc.uri} should not be validated")
 
     // This is a query on XML level, which is easy to implement using yaidom
     val unprefixedElems = doc.documentElement.filterElemsOrSelf(_.qname.prefixOption.isEmpty)
@@ -59,7 +59,7 @@ final class Validator_2_02_00_06(val excludedDocumentUris: Set[URI]) extends Tax
     }
   }
 
-  def acceptForValidation(doc: TaxonomyDocument, taxonomy: Taxonomy): Boolean = {
+  def isTypeOfDocumentToValidate(doc: TaxonomyDocument, taxonomy: Taxonomy): Boolean = {
     doc.documentElement.isInstanceOf[XsdSchema]
   }
 }

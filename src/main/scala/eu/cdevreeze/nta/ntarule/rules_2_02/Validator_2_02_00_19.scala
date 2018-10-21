@@ -48,7 +48,7 @@ final class Validator_2_02_00_19(val excludedDocumentUris: Set[URI]) extends Tax
     taxonomy: Taxonomy,
     validationScope: ValidationScope): immutable.IndexedSeq[Result] = {
 
-    require(acceptForValidation(doc, taxonomy), s"Document ${doc.uri} should not be validated")
+    require(isTypeOfDocumentToValidate(doc, taxonomy), s"Document ${doc.uri} should not be validated")
 
     val invalidElems = doc.documentElement.filterElems(e => e.backingElem.namespaces.nonEmpty)
 
@@ -62,7 +62,7 @@ final class Validator_2_02_00_19(val excludedDocumentUris: Set[URI]) extends Tax
     }
   }
 
-  def acceptForValidation(doc: TaxonomyDocument, taxonomy: Taxonomy): Boolean = {
+  def isTypeOfDocumentToValidate(doc: TaxonomyDocument, taxonomy: Taxonomy): Boolean = {
     doc.documentElement.isInstanceOf[XsdSchema]
   }
 }

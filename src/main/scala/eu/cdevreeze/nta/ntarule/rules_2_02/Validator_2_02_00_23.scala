@@ -44,7 +44,7 @@ final class Validator_2_02_00_23(val excludedDocumentUris: Set[URI]) extends Tax
     taxonomy: Taxonomy,
     validationScope: ValidationScope): immutable.IndexedSeq[Result] = {
 
-    require(acceptForValidation(doc, taxonomy), s"Document ${doc.uri} should not be validated")
+    require(isTypeOfDocumentToValidate(doc, taxonomy), s"Document ${doc.uri} should not be validated")
 
     if (doc.documentElement.attributeOption(ENames.IdEName).isDefined) {
       immutable.IndexedSeq()
@@ -56,7 +56,7 @@ final class Validator_2_02_00_23(val excludedDocumentUris: Set[URI]) extends Tax
     }
   }
 
-  def acceptForValidation(doc: TaxonomyDocument, taxonomy: Taxonomy): Boolean = {
+  def isTypeOfDocumentToValidate(doc: TaxonomyDocument, taxonomy: Taxonomy): Boolean = {
     taxonomy.isEntrypointSchemaDocument(doc)
   }
 }
