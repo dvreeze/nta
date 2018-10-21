@@ -44,5 +44,5 @@ trait TaxonomyValidator {
    * It depends on the kind of validator how the validation scope is used precisely, but in general it should be
    * respected by validators.
    */
-  def validate(validationScope: ValidationScope, taxonomy: Taxonomy): immutable.IndexedSeq[Result]
+  def validate(validationScope: ValidationScope,taxonomy: Taxonomy): immutable.IndexedSeq[Result]
 }

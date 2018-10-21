@@ -63,7 +63,9 @@ object ValidatorRunner {
       Validator_2_02_00_18,
       Validator_2_02_00_19,
       Validator_2_02_00_23,
+      Validator_2_02_00_27,
       Validator_2_02_00_28,
+      Validator_2_02_01_02,
       Validator_2_02_02_26).groupBy(_.ruleName).mapValues(_.head)
 
   def main(args: Array[String]): Unit = {

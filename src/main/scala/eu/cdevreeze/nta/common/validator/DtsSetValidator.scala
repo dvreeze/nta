@@ -51,10 +51,9 @@ trait DtsSetValidator extends TaxonomyValidator {
 
   final def validate(validationScope: ValidationScope, taxonomy: Taxonomy): immutable.IndexedSeq[Result] = {
     val entrypoints: Set[Set[URI]] =
-      taxonomy.dtsMap.keySet.toIndexedSeq
+      taxonomy.dtsMap.keySet
         .filter(ep => ep.forall(uri => validationScope.matches(uri)))
         .filter(ep => ep.intersect(excludedEntrypointDocumentUris).isEmpty)
-        .toSet
 
     validateDtsSet(entrypoints, validationScope, taxonomy)
   }
