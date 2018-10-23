@@ -22,6 +22,7 @@ import scala.collection.JavaConverters._
 
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
+import com.typesafe.config.ConfigUtil
 import com.typesafe.config.ConfigValue
 
 import eu.cdevreeze.nta.common.config.ConfigWrapper
@@ -65,7 +66,7 @@ final class NtaRuleConfigWrapper(val underlyingConfig: Config) extends ConfigWra
   }
 
   def excludedDocumentUrisForRule(ruleName: String, fallbackToDefault: Boolean): Set[URI] = {
-    val path = s"$ruleName.excluded-document-uris"
+    val path = ConfigUtil.joinPath(ruleName, "excluded-document-uris")
 
     if (underlyingConfig.hasPath(path)) {
       underlyingConfig.getStringList(path).asScala.map(u => URI.create(u)).toSet
@@ -79,7 +80,7 @@ final class NtaRuleConfigWrapper(val underlyingConfig: Config) extends ConfigWra
   }
 
   def excludedEntrypointDocumentUrisForRule(ruleName: String, fallbackToDefault: Boolean): Set[URI] = {
-    val path = s"$ruleName.excluded-entrypoint-document-uris"
+    val path = ConfigUtil.joinPath(ruleName, "excluded-entrypoint-document-uris")
 
     if (underlyingConfig.hasPath(path)) {
       underlyingConfig.getStringList(path).asScala.map(u => URI.create(u)).toSet
